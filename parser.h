@@ -2,6 +2,8 @@
 #ifndef __PARSER_H_
 #define __PARSER_H_
 
+#include <stdio.h>
+
 #include "bool.h"
 #include "stream.h"
 #include "string.h"
@@ -79,10 +81,33 @@ typedef struct
 	String name;
 }Module;
 
-
-typedef struct
+typedef enum
 {
-}Statement;
+	RETURN,
+	IF,
+	DECLARATION,
+	BREAK,
+	CONTINUE,
+	WHILE,
+	BLOCK,
+}StatementType;
+
+typedef struct Statement Statement;
+
+struct Statement
+{
+	StatementType type;
+	String source;
+
+	Type declared_type;
+
+	int statements;
+	Statement* statement;
+
+	int expresions;
+	Expresion* expresion;
+
+};
 
 void parseWhitespace(Stream* s);
 void expectString(Stream* s, const char* pattern);
@@ -102,5 +127,6 @@ bool parseStatement(Stream* s, Statement* out);
 bool parseBlock(Stream* s, Statement* out);
 bool parseModule(Stream* s, Module* out);
 
+void printStatement(FILE* f, Statement* s);
 
 #endif

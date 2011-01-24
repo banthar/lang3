@@ -10,3 +10,6 @@ run: lang
 
 debug: lang
 	gdb ./lang --eval-command="run test.x"
+
+valgrind: lang
+	valgrind ./lang test.x

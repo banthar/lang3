@@ -39,6 +39,7 @@ bool parseVariable(Stream* s, Expresion* out)
 {
 
 	assert(out!=NULL);
+	*out=(Expresion){0};
 
 	if(parseIdentifier(s, &(out->source),NULL))
 	{
@@ -118,6 +119,8 @@ bool parseExpresion4(Stream* s, Expresion* out, int parentPriority, bool rightAs
 
 	assert(out!=NULL);
 
+	*out=(Expresion){0};
+
 	Expresion e;
 
 	if(parseConstant(s, &e))
@@ -154,7 +157,7 @@ bool parseExpresion4(Stream* s, Expresion* out, int parentPriority, bool rightAs
 	while(true)
 	{
 
-		Expresion o;
+		Expresion o={0};
 
 		if(peekOperator(s,&o.operator,false) && ( o.operator.priority<parentPriority || (o.operator.priority==parentPriority && rightAssociative)) )
 		{
@@ -246,6 +249,8 @@ void printExpresion(Expresion* e)
 bool parseNamedType(Stream* s, NamedType* out, bool name)
 {
 
+	assert(out!=NULL);
+
 	if(name)
 	{
 
@@ -271,6 +276,8 @@ bool parseNamedType(Stream* s, NamedType* out, bool name)
 
 void parseTypeArgs(Stream* s, Type* out, const char* separator, bool with_names)
 {
+
+	*out=(Type){0};
 
 	while(true)
 	{
@@ -303,6 +310,8 @@ void parseTypeArgs(Stream* s, Type* out, const char* separator, bool with_names)
 
 bool parseType(Stream* s, Type* out)
 {
+
+	*out=(Type){0};
 
 	out->args=0;
 	out->arg=NULL;
@@ -350,6 +359,8 @@ bool parseType(Stream* s, Type* out)
 
 bool parseDeclaration(Stream* s, Statement* out)
 {
+
+	*out=(Statement){0};
 
 	if(parseIdentifier(s,NULL,"type"))
 	{
@@ -410,10 +421,44 @@ bool parseDeclaration(Stream* s, Statement* out)
 
 }
 
+void statementPushExpresion(Statement* out,Expresion* e)
+{
+
+	assert(out!=NULL && e!=NULL);
+
+	out->expresions++;
+
+	if(out->expresion==NULL)
+		out->expresion=malloc(sizeof(Expresion)*out->expresions);
+	else
+		out->expresion=realloc(out->expresion,sizeof(Expresion)*out->expresions);
+
+	out->expresion[out->expresions-1]=*e;
+
+}
+
+void statementPushStatement(Statement* out,Statement* e)
+{
+
+	assert(out!=NULL && e!=NULL);
+
+	out->statements++;
+
+	if(out->statement==NULL)
+		out->statement=malloc(sizeof(Statement)*out->statements);
+	else
+		out->statement=realloc(out->statement,sizeof(Statement)*out->statements);
+
+	out->statement[out->statements-1]=*e;
+
+}
+
 bool parseStatement(Stream* s, Statement* out)
 {
 
-	Expresion ex;
+	*out=(Statement){0};
+
+	Expresion ex={0};
 
 	if(parseDeclaration(s,out))
 	{
@@ -421,8 +466,11 @@ bool parseStatement(Stream* s, Statement* out)
 	}
 	else if(parseString(s,"return"))
 	{
-		Expresion e;
-		parseExpresion(s,&e);
+		Expresion e={0};
+
+		if(parseExpresion(s,&e))
+			statementPushExpresion(out,&e);
+
 		return true;
 	}
 	else if(parseExpresion(s,&ex))
@@ -436,16 +484,31 @@ bool parseStatement(Stream* s, Statement* out)
 
 }
 
+void printStatement(FILE* f, Statement* s)
+{
+	printf("%i\n",s->type);
+}
+
 bool parseBlock(Stream* s, Statement* out)
 {
+
+	assert(out != NULL);
+	*out=(Statement){0};
 
 	if(!parseString(s,"{"))
 		return false;
 
+	out->statement=NULL;
+
 	Statement statement;
+
+	out->type=BLOCK;
 
 	while(parseStatement(s,&statement))
 	{
+
+		statementPushStatement(out,&statement);
+
 		expectString(s,";");
 	}
 
@@ -455,6 +518,10 @@ bool parseBlock(Stream* s, Statement* out)
 
 bool parseModule(Stream* s, Module* out)
 {
+
+	assert(out!=NULL);
+
+	*out=(Module){{0}};
 
 	if(parseIdentifier(s,NULL,"package"))
 	{

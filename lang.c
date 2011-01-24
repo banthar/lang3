@@ -13,6 +13,8 @@ int main(int argc, char* argv[])
 	Module m;
 	parseModule(s,&m);
 
+	printStatement(stdout,NULL);
+
 /*
 	Expresion e;
 
