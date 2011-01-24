@@ -4,28 +4,41 @@
 #include "llvmgen.h"
 
 #include <stdio.h>
+#include <string.h>
 
 int main(int argc, char* argv[])
 {
-	assert(argc==2);
-	Stream* s=openStream(argv[1]);
 
-	Module m;
-	parseModule(s,&m);
 
-	printStatement(stdout,NULL);
+	assert(argc==3);
 
-/*
-	Expresion e;
+	assert(strlen(argv[1])==2);
+	assert(argv[1][0]=='-');
 
-	parseExpresion(s,&e);
-	printExpresion(&e);
-	puts("");
-*/
+	Stream* s=openStream(argv[2]);
+	Module* m=parseModule(s);
 
-	//run(&e);
+	if(m==NULL)
+	{
+		closeStream(s);
+		return 1;
+	}
 
+	switch(argv[1][1])
+	{
+		case 'c':
+			compileModule(m);
+			break;
+		case 'd':
+			dumpNode(m);
+			break;
+		default:
+			panic("unknown action -%c",argv[1][1]);
+	}
+
+	freeModule(m);
 	closeStream(s);
+	return 0;
 
 }
 

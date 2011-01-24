@@ -10,6 +10,20 @@
 #include <string.h>
 #include <stdarg.h>
 
+static bool charIsWhitespace(char c)
+{
+	switch(c)
+	{
+		case ' ':
+		case '\t':
+		case '\n':
+		case '\r':
+			return true;
+		default:
+			return false;
+	}
+}
+
 Stream* openStream(const char* filename)
 {
 
@@ -28,6 +42,8 @@ Stream* openStream(const char* filename)
 	s->data=mmap(NULL, s->length, PROT_READ, MAP_PRIVATE,fd,0);
 	s->filename=strdup(filename);
 
+	s->errorHandler=abort;
+
 	assert(s->data!=NULL);
 
 	return s;
@@ -42,12 +58,25 @@ void closeStream(Stream* s)
 	free(s);
 }
 
+bool isEof(Stream* s)
+{
+	return s->offset>=s->length;
+}
+
 char peekStream(Stream* s, int offset)
 {
 	if(s->offset+offset>=s->length || s->offset+offset<0)
 		return '\0';
 	else
 		return s->data[s->offset+offset];
+}
+
+char getStream(Stream* s, int position)
+{
+	if(position>=s->length || position<0)
+		return '\0';
+	else
+		return s->data[position];
 }
 
 void seekStream(Stream* s, int offset)
@@ -67,13 +96,76 @@ void makeString(Stream* s, int start, int end, String* out)
 	};
 }
 
-void panicStream(Stream* s, const char* format, ...)
+bool compareString(const String* a, const String* b)
 {
 
+	if(a->length!=b->length)
+		return false;
+
+	for(int i=0;i<a->length;i++)
+		if(a->stream->data[a->offset+i]!=b->stream->data[b->offset+i])
+			return false;
+
+	return true;
+
+}
+
+static void printContext(Stream* s, int start, int end)
+{
+
+	if(start<s->length)
+	{
+
+
+		int quote_start=start;
+
+		while((getStream(s,quote_start))!='\n' && getStream(s,quote_start)!='\0')
+			quote_start--;
+
+		while(charIsWhitespace(getStream(s,quote_start)) || getStream(s,quote_start)=='\0')
+			quote_start++;
+
+		int quote_end=quote_start;
+
+		while((getStream(s,quote_end))!='\n' && getStream(s,quote_end)!='\0')
+			quote_end++;
+
+
+		fprintf(stderr, "\t");
+
+		for(int i=quote_start;i<quote_end;i++)
+		{
+			if(getStream(s,i)=='\t')
+				fprintf(stderr," ");
+			else
+				fprintf(stderr,"%c",getStream(s,i));
+		}
+
+		fprintf(stderr, "\n");
+		fprintf(stderr, "\t");
+
+		for(int i=quote_start;i<quote_end && i<end;i++)
+		{
+			if(i>=start && i<end)
+				fprintf(stderr, "^");
+			else
+				fprintf(stderr, " ");
+		}
+
+
+		fprintf(stderr, "\n");
+
+		
+	}
+
+}
+
+static void printPosition(Stream* s, int offset, int length)
+{
 	int line=1;
 	int column=1;
 
-	for(int i=0;i<s->offset;i++)
+	for(int i=0;i<offset;i++)
 	{
 		if(s->data[i]=='\n')
 		{
@@ -85,267 +177,110 @@ void panicStream(Stream* s, const char* format, ...)
 
 	}
 
+	if(length==0)
+	    fprintf(stderr, "%s:%i:%i: ", s->filename,line,column);
+	else
+	    fprintf(stderr, "%s:%i:%i-%i: ", s->filename,line,column,column+length);
+
+
+}
+
+void warnStream(Stream* s, const char* format, ...)
+{
+
+    printPosition(s,s->offset,0);
+
+	fprintf(stderr, "warning: ");
+
 	va_list args;
 	va_start(args,format);
+	vfprintf(stderr,format,args);
+	va_end(args);
 
-	fprintf(stderr, "%s:%i:%i: ", s->filename,line,column);
+	fprintf(stderr, "\n");
+}
+
+void vpanicString(String* s, const char* format, va_list args)
+{
+    printPosition(s->stream,s->offset,s->length);
+    fprintf(stderr, "error: ");
+
 	vfprintf(stderr,format,args);
 
 	fprintf(stderr, "\n");
 
+	printContext(s->stream,s->offset,s->offset+s->length);
 
-	if(!isEof(s))
-	{
+	s->stream->errorHandler();
+	assert(false);
+}
 
-		fprintf(stderr, "\t");
+void panicString(String* s, const char* format, ...)
+{
 
-		int offset=0;
-
-		while(peekStream(s,offset-1)!='\n' && peekStream(s,offset-1)!='\0')
-			offset--;
-
-		int n=offset;
-
-		while(peekStream(s,n)!='\n'  && peekStream(s,n)!='\0')
-		{
-			if(peekStream(s,n)=='\t')
-				fprintf(stderr," ");
-			else
-				fprintf(stderr,"%c",peekStream(s,n));
-
-			n++;
-		}
-
-		fprintf(stderr, "\n");
-		fprintf(stderr, "\t");
-
-		for(int i=0;i<-offset;i++)
-			fprintf(stderr, " ");
-		
-		fprintf(stderr, "^\n");
-
-		
-	}
-
-	fprintf(stderr,"\n");
-
+	va_list args;
+	va_start(args,format);
+	vpanicString(s,format,args);
 	va_end(args);
-
-//	exit(1);
-
-    abort();
 
 }
 
-void printString(String* s)
+bool panicStream(Stream* s, const char* format, ...)
+{
+
+    printPosition(s,s->offset,0);
+    fprintf(stderr, "error: ");
+
+	va_list args;
+	va_start(args,format);
+	vfprintf(stderr,format,args);
+	va_end(args);
+
+	fprintf(stderr, "\n");
+
+	printContext(s,s->offset,s->offset+1);
+
+	s->errorHandler();
+	assert(false);
+
+}
+
+char* strdupString(const String* s)
+{
+	return strndup(s->stream->data+s->offset,s->length);
+}
+
+char* copyString(const String* s, char* buf, int len)
+{
+
+	int min(int a, int b)
+	{
+		return a>b?b:a;
+	}
+
+	for(int i=0;i<len&&i<s->length;i++)
+		buf[i]=s->stream->data[s->offset+i];
+
+	buf[min(len-1,s->length)]='\0';
+
+	return buf;
+
+}
+
+void printString(FILE* f, String* s)
 {
 
 	if(s==NULL)
 	{
-		printf("null");
+		fprintf(f,"null");
 	}
 	else
 	{
 		for(int i=0;i<s->length;i++)
 		{
-			printf("%c",s->stream->data[s->offset+i]);
+			fprintf(f,"%c",s->stream->data[s->offset+i]);
 		}
 	}
-}
-
-bool isAlpha(Stream* s)
-{
-	switch(peekStream(s, 0))
-	{
-		case '_':
-		case 'A'...'Z':
-		case 'a'...'z':
-			return true;
-		default:
-			return false;
-	}
-}
-
-bool isDigit(Stream* s)
-{
-	switch(peekStream(s, 0))
-	{
-		case '0'...'9':
-			return true;
-		default:
-			return false;
-	}
-}
-
-bool isAlphaNum(Stream* s)
-{
-	return isAlpha(s) || isDigit(s);
-}
-
-bool isWhitespace(Stream* s)
-{
-
-	switch(peekStream(s, 0))
-	{
-		case ' ':
-		case '\t':
-		case '\n':
-		case '\r':
-			return true;
-		default:
-			return false;
-	}
-}
-
-bool isChar(Stream* s, char c)
-{
-	return peekStream(s,0)==c;
-}
-
-bool isEof(Stream* s)
-{
-	return peekStream(s,0)=='\0';
-}
-
-bool isString(Stream* s, const char* string)
-{
-	for(int i=0;i<strlen(string);i++)
-		if(peekStream(s,i)!=string[i])
-			return false;
-
-	return true;
-}
-
-bool readWhitespace(Stream* s)
-{
-
-	if(!isWhitespace(s))
-		return false;
-
-	while(isWhitespace(s))
-		seekStream(s,1);
-
-	return true;
-
-}
-
-bool readComment(Stream* s, String* out)
-{
-
-	if(isString(s,"/*"))
-	{
-
-		seekStream(s,2);
-		int start=s->offset;
-
-		int d=1;
-		
-		while(d>0)
-		{
-
-			if(isString(s,"/*"))
-			{
-				d++;
-				seekStream(s,2);
-			}
-			else if(isString(s,"*/"))
-			{
-				d--;
-				seekStream(s,2);
-			}
-			else if(isEof(s))
-			{
-				panic("EOF while looking for '*/'",0);
-			}
-			else
-			{
-				seekStream(s,1);
-			}
-
-		}
-
-		makeString(s, start, s->offset-start-2, out);
-
-		return true;
-
-	}
-	else if(isString(s,"//"))
-	{
-		seekStream(s,2);
-		int start=s->offset;
-
-		while(!isString(s,"\n") && !isEof(s))
-		{
-			seekStream(s,1);
-		}
-
-		seekStream(s,1);
-
-		makeString(s, start, s->offset-start-1, out);
-
-		return true;
-
-	}
-	else
-	{
-		return false;
-	}
-
-}
-
-bool readString(Stream* s, const char* pattern)
-{
-	if(isString(s,pattern))
-	{
-		seekStream(s,strlen(pattern));
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool readIdentifier(Stream* s, String* out, const char* pattern)
-{
-	readWhitespace(s);
-
-	if(!isAlpha(s))
-		return false;
-
-	int start=s->offset;
-	int i=0;
-
-	while(isAlphaNum(s))
-	{
-		if(pattern!=NULL && pattern[i]!=peekStream(s,0))
-			return false;
-
-		i++;
-		seekStream(s,1);
-	}
-
-	makeString(s, start, s->offset-start, out);
-
-	return true;
-
-}
-
-bool readNumber(Stream* s, String* out)
-{
-
-	if(!isDigit(s))
-		return false;
-
-	int start=s->offset;
-
-	while(isDigit(s))
-	{
-		seekStream(s,1);
-	}
-	
-	makeString(s, start, s->offset-start, out);
-	return true;
 
 }
 
