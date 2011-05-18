@@ -35,6 +35,8 @@ struct Context
 
 	Context* parent;
 
+	bool terminated;
+
 	int variables;
 	Variable* variable;
 
@@ -65,6 +67,7 @@ static Context pushContext(Context *ctx)
 		.builder=ctx->builder,
 		.function=ctx->function,
 		.block=ctx->block,
+		.terminated=false,
 	};
 
 	return new_context;
@@ -81,6 +84,8 @@ static Context* popContext(Context *ctx)
 		free(ctx->type);
 
 	ctx->parent->builder=ctx->builder;
+
+	ctx->parent->terminated=ctx->terminated;
 
 	*ctx=(Context){0};
 
@@ -200,7 +205,8 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 
 		Type* t=getTypeById(ctx,struct_type);
 
-		//
+		//TODO
+		printf("type: %p",t);
 
 		return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
 	}
@@ -321,7 +327,7 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 void llvmBuildStatement(Context* ctx, Node* n)
 {
 
-	if(ctx->builder==NULL)
+	if(ctx->terminated)
 		panicNode(n,"unreachable code");
 
 	switch(n->type)
@@ -366,9 +372,40 @@ void llvmBuildStatement(Context* ctx, Node* n)
 					LLVMBuildRetVoid(ctx->builder);
 				else
 					LLVMBuildRet(ctx->builder,llvmBuildExpresion(ctx,getChild(n,0)));
-			
-				LLVMDisposeBuilder(ctx->builder);
-				ctx->builder=NULL;
+
+				ctx->terminated=true;
+
+
+			}
+			break;
+		case IF_STATEMENT:
+			{
+				LLVMValueRef condition=llvmBuildExpresion(ctx,getChild(n,0));
+
+				LLVMBasicBlockRef thenBlock=LLVMAppendBasicBlock(ctx->function,"then");
+				LLVMBasicBlockRef elseBlock=LLVMAppendBasicBlock(ctx->function,"else");
+				LLVMBasicBlockRef exitBlock=LLVMAppendBasicBlock(ctx->function,"fi");
+
+				LLVMBuildCondBr(ctx->builder, condition,thenBlock,elseBlock);				
+
+				LLVMPositionBuilderAtEnd(ctx->builder, thenBlock);
+				ctx->terminated=false;
+				llvmBuildStatement(ctx,getChild(n,1));
+
+				if(!ctx->terminated)
+					LLVMBuildBr(ctx->builder, exitBlock);
+
+				LLVMPositionBuilderAtEnd(ctx->builder, elseBlock);
+				ctx->terminated=false;
+				if(getChildrenCount(n)>=3)
+				{
+					llvmBuildStatement(ctx,getChild(n,2));
+				}
+				if(!ctx->terminated)
+					LLVMBuildBr(ctx->builder, exitBlock);
+
+				LLVMPositionBuilderAtEnd(ctx->builder, exitBlock);
+				ctx->terminated=false;
 
 			}
 			break;
@@ -513,6 +550,8 @@ void llvmDefineFunction(Context* ctx, Node* n)
 	assert(n->type==FUNCTION_DECLARATION);
 	Variable function=*getVariable(ctx, getChild(n,0)->value);
 
+	ctx->function=function.llvm_value;
+
 	LLVMBasicBlockRef bblock=LLVMAppendBasicBlock(function.llvm_value, "entry");
 	ctx->builder=LLVMCreateBuilder();
 	LLVMPositionBuilderAtEnd(ctx->builder, bblock);
@@ -536,16 +575,13 @@ void llvmDefineFunction(Context* ctx, Node* n)
 
 	}
 
+
 	llvmBuildStatement(ctx,getChild(n,2));
 
-	if(ctx->builder!=NULL)
+	if(!ctx->terminated)
 	{
 		LLVMBuildUnreachable(ctx->builder);
-		LLVMDisposeBuilder(ctx->builder);
-		ctx->builder=NULL;
-//		panicNode(f,"no return statement");
-//		LLVMBuildRetVoid(ctx->builder);
-
+		ctx->terminated=true;
 	}
 
 

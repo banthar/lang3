@@ -1,12 +1,13 @@
 
-type Point = struct
+function abs(x:Int):Int
 {
-	x:Int;
-	y:Int;
-};
-
-function length(this:Point):Int
-{
-	return this.x*this.y;
-};
+	if(x>0)
+	{
+		return x;
+	}
+	else
+	{
+		return -x;
+	}
+}
 

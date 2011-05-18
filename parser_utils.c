@@ -259,7 +259,7 @@ bool parseTerminated(Stream* s, Node* parent, bool (*parser)(Stream* s, Node* ou
 		addChild(parent,n);
 		n=(Node){0};
 
-		expect(s,terminator);
+		readString(s,terminator);
 
 	}
 	
