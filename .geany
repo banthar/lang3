@@ -1,0 +1,41 @@
+
+[indentation]
+indent_width=4
+indent_type=1
+indent_hard_tab_width=8
+detect_indent=false
+indent_mode=2
+
+[project]
+name=lang3
+base_path=/home/piotr/projekty/lang3/
+description=
+
+[long line marker]
+long_line_behaviour=1
+long_line_column=72
+
+[files]
+current_page=0
+FILE_NAME_0=0;C;0;16;1;1;0;/home/piotr/projekty/lang3/llvmgen.c;0;4
+
+[build-menu]
+EX_00_LB=_Execute
+EX_00_CM=make run
+EX_00_WD=%p
+CFT_00_LB=_Compile
+CFT_00_CM=make %e.o
+CFT_00_WD=%p
+CFT_01_LB=_Build
+CFT_01_CM=make
+CFT_01_WD=%p
+filetypes=C;
+NF_00_LB=_Make
+NF_00_CM=make
+NF_00_WD=%p
+NF_01_LB=Make Custom _Target
+NF_01_CM=make 
+NF_01_WD=%p
+NF_02_LB=Make _Object
+NF_02_CM=make %e.o
+NF_02_WD=%p
