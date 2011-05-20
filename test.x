@@ -1,13 +1,13 @@
 
 function abs(x:Int):Int
 {
-	if(x>0)
+
+	while(x>0)
 	{
-		return x;
+		x=x-1;
 	}
-	else
-	{
-		return -x;
-	}
+	
+	return x;
+	
 }
 

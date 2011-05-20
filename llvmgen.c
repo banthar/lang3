@@ -260,6 +260,11 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	{
 		return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n),cstrString(&n->source));
 	}
+	else if(strcmp(getChild(n,0)->value,"=")==0)
+	{
+		dumpNode(n);
+		return LLVMBuildStore(ctx->builder,arg(1),larg(0));
+	}
 
 	for(Operator* o=operators;o->name!=NULL;o++)
 	{
@@ -376,6 +381,26 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				ctx->terminated=true;
 
 
+			}
+			break;
+		case WHILE_STATEMENT:
+			{
+				LLVMBasicBlockRef beginBlock=LLVMAppendBasicBlock(ctx->function,"while_begin");
+				LLVMBasicBlockRef bodyBlock=LLVMAppendBasicBlock(ctx->function,"while_body");
+				LLVMBasicBlockRef endBlock=LLVMAppendBasicBlock(ctx->function,"while_end");
+				
+				LLVMBuildBr(ctx->builder, beginBlock);
+				
+				LLVMPositionBuilderAtEnd(ctx->builder, beginBlock);
+				LLVMValueRef condition=llvmBuildExpresion(ctx,getChild(n,0));
+				LLVMBuildCondBr(ctx->builder, condition,bodyBlock,endBlock);
+
+				LLVMPositionBuilderAtEnd(ctx->builder, bodyBlock);
+				llvmBuildStatement(ctx,getChild(n,1));
+				LLVMBuildBr(ctx->builder, beginBlock);
+				
+				LLVMPositionBuilderAtEnd(ctx->builder, endBlock);
+				
 			}
 			break;
 		case IF_STATEMENT:

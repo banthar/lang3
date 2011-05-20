@@ -1,20 +1,20 @@
 
 CFLAGS+=-Wall -std=gnu99
 
-CFLAGS+=-g -O0
+CFLAGS+=-g -O2
+
+OBJECTS:=ast.o error.o lang.o llvmgen.o operators.o parser.o parser_utils.o stream.o
 
 LLVM_CONFIG:=/usr/local/lib/llvm-2.8/bin/llvm-config
-
 CFLAGS+=`$(LLVM_CONFIG) --cflags`
 LIBS+=`$(LLVM_CONFIG) --libs --ldflags` -lstdc++
 
-SOURCES=error.c llvmgen.c ast.c parser.c parser_utils.c lang.c stream.c operators.c
 
 .DEFAULT: lang
-.PHONY: run debug
+.PHONY: run debug clean
 
-lang: *.[ch] Makefile
-	gcc $(SOURCES) $(CFLAGS) $(LIBS) -o lang
+lang: $(OBJECTS) Makefile
+	gcc $(OBJECTS) $(LIBS) -o lang
 
 run: lang
 	./lang -c test.x
@@ -25,3 +25,6 @@ dump: lang
 
 debug: lang
 	gdb ./lang --eval-command="run -c test.x"
+
+clean:
+	rm $(OBJECTS)
