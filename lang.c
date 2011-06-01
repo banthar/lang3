@@ -32,6 +32,12 @@ int main(int argc, char* argv[])
 		case 'd':
 			dumpNode(m);
 			break;
+		case 'r':
+			{
+				LLVMModuleRef llvmModule=compileModule(m);
+				runModule(llvmModule);
+			}
+			break;
 		default:
 			panic("unknown action -%c",argv[1][1]);
 	}

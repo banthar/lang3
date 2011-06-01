@@ -58,12 +58,12 @@ void closeStream(Stream* s)
 	free(s);
 }
 
-bool isEof(Stream* s)
+bool isEof(const Stream* s)
 {
 	return s->offset>=s->length;
 }
 
-char peekStream(Stream* s, int offset)
+char peekStream(const Stream* s, int offset)
 {
 	if(s->offset+offset>=s->length || s->offset+offset<0)
 		return '\0';
@@ -71,7 +71,7 @@ char peekStream(Stream* s, int offset)
 		return s->data[s->offset+offset];
 }
 
-char getStream(Stream* s, int position)
+char getStream(const Stream* s, int position)
 {
 	if(position>=s->length || position<0)
 		return '\0';
@@ -110,7 +110,7 @@ bool compareString(const String* a, const String* b)
 
 }
 
-static void printContext(Stream* s, int start, int end)
+static void printContext(const Stream* s, int start, int end)
 {
 
 	if(start<s->length)
@@ -160,7 +160,7 @@ static void printContext(Stream* s, int start, int end)
 
 }
 
-static void printPosition(Stream* s, int offset, int length)
+static void printPosition(const Stream* s, int offset, int length)
 {
 	int line=1;
 	int column=1;
@@ -185,7 +185,7 @@ static void printPosition(Stream* s, int offset, int length)
 
 }
 
-void warnStream(Stream* s, const char* format, ...)
+void warnStream(const Stream* s, const char* format, ...)
 {
 
     printPosition(s,s->offset,0);
@@ -200,7 +200,7 @@ void warnStream(Stream* s, const char* format, ...)
 	fprintf(stderr, "\n");
 }
 
-void vpanicString(String* s, const char* format, va_list args)
+void vpanicString(const String* s, const char* format, va_list args)
 {
     printPosition(s->stream,s->offset,s->length);
     fprintf(stderr, "error: ");
@@ -215,7 +215,7 @@ void vpanicString(String* s, const char* format, va_list args)
 	assert(false);
 }
 
-void panicString(String* s, const char* format, ...)
+void panicString(const String* s, const char* format, ...)
 {
 
 	va_list args;
@@ -225,7 +225,7 @@ void panicString(String* s, const char* format, ...)
 
 }
 
-bool panicStream(Stream* s, const char* format, ...)
+bool panicStream(const Stream* s, const char* format, ...)
 {
 
     printPosition(s,s->offset,0);

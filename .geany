@@ -17,7 +17,12 @@ long_line_column=72
 
 [files]
 current_page=0
-FILE_NAME_0=0;C;0;16;1;1;0;/home/piotr/projekty/lang3/llvmgen.c;0;4
+FILE_NAME_0=5151;C;0;16;1;1;0;/home/piotr/projekty/lang3/llvmgen.c;0;4
+FILE_NAME_1=333;Make;0;16;1;1;0;/home/piotr/projekty/lang3/Makefile;0;4
+FILE_NAME_2=205;C;0;16;1;1;0;/home/piotr/projekty/lang3/parser.c;0;4
+FILE_NAME_3=45;None;0;16;1;1;0;/home/piotr/projekty/lang3/test.x;0;4
+FILE_NAME_4=0;C;0;16;1;1;0;/home/piotr/projekty/lang3/operators.h;0;4
+FILE_NAME_5=0;C;0;16;1;1;0;/home/piotr/projekty/lang3/operators.c;0;4
 
 [build-menu]
 EX_00_LB=_Execute

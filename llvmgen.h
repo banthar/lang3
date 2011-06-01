@@ -4,7 +4,10 @@
 
 #include "parser.h"
 
-void compileModule(Module *module);
+#include "llvm-c/Core.h"
+
+LLVMModuleRef compileModule(Module *module);
+void runModule(LLVMModuleRef llvmModule);
 
 #endif
 

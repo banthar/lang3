@@ -21,7 +21,7 @@ static bool isWhitespace(int c)
 	}
 }
 
-__attribute__((noreturn)) void panicNode(Node* n, const char* format, ...)
+__attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...)
 {
 	va_list args;
 	va_start(args,format);
@@ -116,7 +116,12 @@ Node* getChild(const Node* parent, const int index)
 	{
 		child=child->next;
 	}
-
+	
+	if(child==NULL)
+	{
+		panicNode(parent,"");
+	}
+	
 	assert(child!=NULL);
 
 	return child;

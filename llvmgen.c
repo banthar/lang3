@@ -28,20 +28,23 @@ typedef struct
 
 struct Context
 {
-	LLVMModuleRef module;
-	LLVMBuilderRef builder;
-	LLVMValueRef function;
-	LLVMBasicBlockRef block;
 
 	Context* parent;
-
-	bool terminated;
 
 	int variables;
 	Variable* variable;
 
 	int types;
 	Type* type;
+
+	LLVMModuleRef module;
+	LLVMValueRef function;
+
+	LLVMBuilderRef builder;
+	bool terminated;
+	LLVMBasicBlockRef breakBlock;
+	LLVMBasicBlockRef continueBlock;
+
 };
 
 static Context pushContext(Context *ctx);
@@ -64,26 +67,30 @@ static Context pushContext(Context *ctx)
 	Context new_context={
 		.parent=ctx,
 		.module=ctx->module,
-		.builder=ctx->builder,
 		.function=ctx->function,
-		.block=ctx->block,
+		.builder=ctx->builder,
 		.terminated=false,
+		.continueBlock=ctx->continueBlock,
+		.breakBlock=ctx->breakBlock,
 	};
 
 	return new_context;
 
 }
 
-static Context* popContext(Context *ctx)
+static void destroyContext(Context *ctx)
 {
-
 	if(ctx->variable!=NULL)
 		free(ctx->variable);
 
 	if(ctx->type!=NULL)
 		free(ctx->type);
+}
 
-	ctx->parent->builder=ctx->builder;
+static Context* popContext(Context *ctx)
+{
+
+	destroyContext(ctx);
 
 	ctx->parent->terminated=ctx->terminated;
 
@@ -253,7 +260,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 			args[i]=arg(i+1);
 		}
 
-		return LLVMBuildCall(ctx->builder, larg(0), args,num_args,cstrString(&n->source));
+		return LLVMBuildCall(ctx->builder, larg(0), args,num_args,"");
 
 	}
 	else if(strcmp(getChild(n,0)->value,".")==0)
@@ -262,7 +269,6 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	}
 	else if(strcmp(getChild(n,0)->value,"=")==0)
 	{
-		dumpNode(n);
 		return LLVMBuildStore(ctx->builder,arg(1),larg(0));
 	}
 
@@ -350,7 +356,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				v.llvm_value=LLVMBuildAlloca(ctx->builder, llvmBuildType(ctx,getChild(n,1)), getChild(n,0)->value );
 
 				if(getChildrenCount(n)>1)
-					LLVMBuildStore(ctx->builder,llvmBuildExpresion(ctx,getChild(n,1)),v.llvm_value);
+					LLVMBuildStore(ctx->builder,llvmBuildExpresion(ctx,getChild(n,2)),v.llvm_value);
 
 				addVariable(ctx,v);
 
@@ -385,22 +391,46 @@ void llvmBuildStatement(Context* ctx, Node* n)
 			break;
 		case WHILE_STATEMENT:
 			{
-				LLVMBasicBlockRef beginBlock=LLVMAppendBasicBlock(ctx->function,"while_begin");
-				LLVMBasicBlockRef bodyBlock=LLVMAppendBasicBlock(ctx->function,"while_body");
-				LLVMBasicBlockRef endBlock=LLVMAppendBasicBlock(ctx->function,"while_end");
 				
-				LLVMBuildBr(ctx->builder, beginBlock);
 				
-				LLVMPositionBuilderAtEnd(ctx->builder, beginBlock);
-				LLVMValueRef condition=llvmBuildExpresion(ctx,getChild(n,0));
-				LLVMBuildCondBr(ctx->builder, condition,bodyBlock,endBlock);
+				Context loop_ctx=pushContext(ctx);
+				
+				loop_ctx.continueBlock=LLVMAppendBasicBlock(loop_ctx.function,"while_begin");
+				LLVMBasicBlockRef bodyBlock=LLVMAppendBasicBlock(loop_ctx.function,"while_body");
+				loop_ctx.breakBlock=LLVMAppendBasicBlock(loop_ctx.function,"while_end");
+				
+				LLVMBuildBr(loop_ctx.builder, loop_ctx.continueBlock);
+				
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, loop_ctx.continueBlock);
+				LLVMValueRef condition=llvmBuildExpresion(&loop_ctx,getChild(n,0));
+				LLVMBuildCondBr(loop_ctx.builder, condition,bodyBlock,loop_ctx.breakBlock);
 
-				LLVMPositionBuilderAtEnd(ctx->builder, bodyBlock);
-				llvmBuildStatement(ctx,getChild(n,1));
-				LLVMBuildBr(ctx->builder, beginBlock);
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, bodyBlock);
+				llvmBuildStatement(&loop_ctx,getChild(n,1));
+				if(!loop_ctx.terminated)
+					LLVMBuildBr(loop_ctx.builder, loop_ctx.continueBlock);
 				
-				LLVMPositionBuilderAtEnd(ctx->builder, endBlock);
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, loop_ctx.breakBlock);
 				
+				popContext(&loop_ctx);
+				ctx->terminated=false;
+				
+			}
+			break;
+		case BREAK_STATEMENT:
+			{
+				if(ctx->breakBlock==NULL)
+					panicNode(n,"break without a loop");
+				LLVMBuildBr(ctx->builder, ctx->breakBlock);
+				ctx->terminated=true;
+			}
+			break;
+		case CONTINUE_STATEMENT:
+			{
+				if(ctx->continueBlock==NULL)
+					panicNode(n,"continue without a loop");
+				LLVMBuildBr(ctx->builder, ctx->continueBlock);
+				ctx->terminated=true;
 			}
 			break;
 		case IF_STATEMENT:
@@ -436,7 +466,6 @@ void llvmBuildStatement(Context* ctx, Node* n)
 			break;
 		default:
 			{
-				dumpNode(n);
 				panicString(&n->source, "not a statement");
 			}
 	}
@@ -499,7 +528,6 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 			}
 			break;
 		default:
-			dumpNode(n);
 			panicString(&n->source,"not a type");
 	}
 
@@ -631,7 +659,7 @@ void llvmDefineVariable(Context* ctx, Node* n)
 
 }
 
-void compileModule(Module *m)
+LLVMModuleRef compileModule(Module *m)
 {
 
 	Context ctx={0};
@@ -640,6 +668,7 @@ void compileModule(Module *m)
 
 	LLVMAddTypeName(ctx.module,"Bool",LLVMInt1Type());
 	LLVMAddTypeName(ctx.module,"Int",LLVMInt32Type());
+	LLVMAddTypeName(ctx.module,"Char",LLVMInt8Type());
 	LLVMAddTypeName(ctx.module,"Void",LLVMVoidType());
 
 	for(Node* n=m->child;n!=NULL;n=n->next)
@@ -671,9 +700,8 @@ void compileModule(Module *m)
 			//llvmBuildFunction(&ctx,n);
 	}
 
-	LLVMDumpModule(ctx.module);
+	//LLVMDumpModule(ctx.module);
 	LLVMVerifyModule(ctx.module,LLVMAbortProcessAction,NULL);
-
 
 	LLVMPassManagerRef manager=LLVMCreatePassManager();
 	LLVMAddPromoteMemoryToRegisterPass(manager);
@@ -685,8 +713,47 @@ void compileModule(Module *m)
 	LLVMRunPassManager(manager,ctx.module);
 	LLVMDisposePassManager(manager);
 
-	LLVMDumpModule(ctx.module);
+	//LLVMDumpModule(ctx.module);
+
+	destroyContext(&ctx);
+	
+	return ctx.module;
 
 }
 
+void writeInt(int i)
+{
+	printf("%i\n",i);
+}
+
+int readInt()
+{
+	int i;
+	scanf("%d",&i);
+	return i;
+}
+
+void runModule(LLVMModuleRef llvmModule)
+{
+	LLVMLinkInJIT();
+	LLVMInitializeNativeTarget();
+	
+	char *err;
+	LLVMExecutionEngineRef engine;
+	bool ret=LLVMCreateJITCompilerForModule(&engine, llvmModule,3,&err);
+	
+	if(ret)
+	{
+		panic(err);
+		return;
+	}
+
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"write"),(void*)&writeInt);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"read"),(void*)&readInt);
+
+	LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),0,(const char**){NULL},(const char**){NULL});
+					  
+	LLVMDisposeExecutionEngine(engine);
+	
+}
 

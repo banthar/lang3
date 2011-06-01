@@ -130,6 +130,14 @@ bool parseStatement(Stream* s, Node* out)
 		childParse(s,out,parseStatement) or panicStream(s,"expected statement");
 
 	}
+	else if(readString(s,"break"))
+	{
+		out->type=BREAK_STATEMENT;
+	}
+	else if(readString(s,"continue"))
+	{
+		out->type=CONTINUE_STATEMENT;
+	}
 	else if(readString(s,"for"))
 	{
 
@@ -222,6 +230,11 @@ bool parseType(Stream* s, Node* out)
 		expect(s,":");
 		childParse(s,out,parseType);
 
+	}
+	else if(readString(s,"*"))
+	{
+		out->type=POINTER_TYPE;
+		childParse(s,out,parseType);
 	}
 	else if(parseIdentifier(s,out))
 	{

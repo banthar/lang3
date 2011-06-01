@@ -36,16 +36,15 @@ void printString(FILE* f, String* s);
 
 Stream* openStream(const char* filename);
 void closeStream(Stream* s);
-char peekStream(Stream* s, int offset);
-char getStream(Stream* s, int position);
+char peekStream(const Stream* s, int offset);
+char getStream(const Stream* s, int position);
 void seekStream(Stream* s, int offset);
-bool isEof(Stream* s);
+bool isEof(const Stream* s);
 void makeString(Stream* s, int start, int end, String* out);
-void warnStream(Stream* s, const char* format, ...);
-__attribute__((noreturn)) bool panicStream(Stream* s, const char* format, ...);
-__attribute__((noreturn)) void panicString(String* s, const char* format, ...);
-__attribute__((noreturn)) void vpanicString(String* s, const char* format, va_list args);
-bool isEof(Stream* s);
+void warnStream(const Stream* s, const char* format, ...);
+__attribute__((noreturn)) bool panicStream(const Stream* s, const char* format, ...);
+__attribute__((noreturn)) void panicString(const String* s, const char* format, ...);
+__attribute__((noreturn)) void vpanicString(const String* s, const char* format, va_list args);
 
 #endif
 
