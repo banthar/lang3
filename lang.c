@@ -6,10 +6,45 @@
 #include <stdio.h>
 #include <string.h>
 
-int main(int argc, char* argv[])
+typedef struct
+{
+	bool dump;
+}Config;
+
+int run(Config config, int argc, const char* argv[])
+{
+	Stream* s=openStream(argv[0]);
+	Module* m=parseModule(s);
+	LLVMModuleRef llvmModule=compileModule(m);
+	closeStream(s);
+	freeModule(m);
+	
+	return runModule(llvmModule,argc,argv);
+
+}
+
+int main(int argc, const char* argv[])
 {
 
+	Config config={0};
 
+	for(int i=1;i<argc;i++)
+	{
+		if(strlen(argv[i])>0)
+		{
+			if(argv[i][0]=='-')
+			{
+			}
+			else
+			{
+				return run(config,argc-i,&argv[i]);
+			}
+		}
+	}
+
+	panic("no filename specified");
+
+/*
 	assert(argc==3);
 
 	assert(strlen(argv[1])==2);
@@ -45,6 +80,7 @@ int main(int argc, char* argv[])
 	freeModule(m);
 	closeStream(s);
 	return 0;
+*/
 
 }
 

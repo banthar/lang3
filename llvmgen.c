@@ -733,8 +733,9 @@ int readInt()
 	return i;
 }
 
-void runModule(LLVMModuleRef llvmModule)
+int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 {
+	
 	LLVMLinkInJIT();
 	LLVMInitializeNativeTarget();
 	
@@ -745,15 +746,19 @@ void runModule(LLVMModuleRef llvmModule)
 	if(ret)
 	{
 		panic(err);
-		return;
+		return -1;
 	}
 
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"write"),(void*)&writeInt);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"read"),(void*)&readInt);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"atoi"),(void*)&atoi);
 
-	LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),0,(const char**){NULL},(const char**){NULL});
+	int returnValue=LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),argc,argv,(const char*[]){NULL});
 					  
 	LLVMDisposeExecutionEngine(engine);
+	
+	
+	return returnValue;
 	
 }
 

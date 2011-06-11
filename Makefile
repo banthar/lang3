@@ -20,13 +20,13 @@ $(OBJECTS): %.o: %.c Makefile $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 run: lang
-	./lang -r test.x
+	./lang test.x
 
 dump: lang
-	./lang -d test.x
+	./lang test.x
 
 debug: lang
-	gdb ./lang --eval-command="run -c test.x"
+	gdb ./lang --eval-command="run test.x"
 
 clean:
 	rm $(OBJECTS)

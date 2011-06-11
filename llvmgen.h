@@ -7,7 +7,7 @@
 #include "llvm-c/Core.h"
 
 LLVMModuleRef compileModule(Module *module);
-void runModule(LLVMModuleRef llvmModule);
+int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[]);
 
 #endif
 
