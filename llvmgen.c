@@ -210,55 +210,7 @@ static Type* getTypeById(const Context* ctx, LLVMTypeRef id)
 	return getTypeById(ctx->parent,id);
 }
 
-LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
-{
-
-	LLVMValueRef arg(int index)
-	{
-		assert(getChildrenCount(n)>index);
-
-		return llvmBuildExpresion(ctx,getChild(n,index+1));
-
-	}
-
-	LLVMValueRef larg(int index)
-	{
-		assert(getChildrenCount(n)>index);
-
-		return llvmBuildLExpresion(ctx,getChild(n,index+1));
-
-	}
-
-	switch(getChild(n,0)->operator)
-	{
-		case OPERATOR_ELEMENT:
-			{
-				LLVMValueRef left=larg(0);
-
-				LLVMTypeRef left_type=LLVMTypeOf(left);
-
-				assert(LLVMGetTypeKind(left_type)==LLVMPointerTypeKind);
-
-				LLVMTypeRef struct_type=LLVMGetElementType(left_type);
-
-				assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
-
-				Type* t=getTypeById(ctx,struct_type);
-
-				//TODO
-				printf("type: %p",t);
-
-				return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
-			}
-		case OPERATOR_INDEX:
-			return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
-		default:
-			break;
-	}
-	
-	panicNode(n,"not a l-value");
-
-}
+/* Expression */
 
 LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 {
@@ -267,7 +219,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	{
 		assert(getChildrenCount(n)>index);
 
-		return llvmBuildExpresion(ctx,getChild(n,index+1));
+		return llvmBuildExpresion(ctx,getChild(n,index));
 
 	}
 
@@ -275,21 +227,21 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	{
 		assert(getChildrenCount(n)>index);
 
-		return llvmBuildLExpresion(ctx,getChild(n,index+1));
+		return llvmBuildLExpresion(ctx,getChild(n,index));
 
 	}
 
-	switch(operators[getChild(n,0)->operator].category)
+	switch(operators[n->operator].category)
 	{
 		case BINARY_ARITHMETIC:
-			return LLVMBuildBinOp(ctx->builder, operatorOpcodes[getChild(n,0)->operator].integer,arg(0),arg(1),cstrString(&n->source));
+			return LLVMBuildBinOp(ctx->builder, operatorOpcodes[n->operator].integer,arg(0),arg(1),cstrString(&n->source));
 		case COMPARISION:
-			return LLVMBuildICmp(ctx->builder, operatorOpcodes[getChild(n,0)->operator].integer, arg(0),arg(1),cstrString(&n->source));
+			return LLVMBuildICmp(ctx->builder, operatorOpcodes[n->operator].integer, arg(0),arg(1),cstrString(&n->source));
 		default:
 			break;
 	}
 
-	switch(getChild(n,0)->operator)
+	switch(n->operator)
 	{
 		case OPERATOR_PREFIX_PLUS:
 			return arg(0);
@@ -298,7 +250,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 		case OPERATOR_CALL:
 			{
 
-				int num_args=getChildrenCount(n)-2;
+				int num_args=getChildrenCount(n)-1;
 				LLVMValueRef args[num_args];
 
 				for(int i=0;i<num_args;i++)
@@ -328,30 +280,6 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 
 }
 
-LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n)
-{
-	switch(n->type)
-	{
-		case IDENTIFIER:
-		{
-
-			if(ctx->builder==NULL)
-				panicNode(n,"expresion has to be constant");
-
-			Variable* v=getVariable(ctx, n->value);
-
-			if(v==NULL)
-				panicNode(n,"'%s' undeclared",n->value);
-
-			return v->llvm_value;
-
-		}
-		case OPERATION:
-			return llvmBuildLOperation(ctx,n);
-		default:
-			panicNode(n,"not an L-expresion");
-	}
-}
 
 LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 {
@@ -390,6 +318,85 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 	}
 
 }
+
+/* L-Expression */
+
+LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
+{
+
+	LLVMValueRef arg(int index)
+	{
+		assert(getChildrenCount(n)>index);
+
+		return llvmBuildExpresion(ctx,getChild(n,index));
+
+	}
+
+	LLVMValueRef larg(int index)
+	{
+		assert(getChildrenCount(n)>index);
+
+		return llvmBuildLExpresion(ctx,getChild(n,index));
+
+	}
+
+	switch(n->operator)
+	{
+		case OPERATOR_ELEMENT:
+			{
+				LLVMValueRef left=larg(0);
+
+				LLVMTypeRef left_type=LLVMTypeOf(left);
+
+				assert(LLVMGetTypeKind(left_type)==LLVMPointerTypeKind);
+
+				LLVMTypeRef struct_type=LLVMGetElementType(left_type);
+
+				assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
+
+				Type* t=getTypeById(ctx,struct_type);
+
+				//TODO
+				printf("type: %p",t);
+
+				return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
+			}
+		case OPERATOR_INDEX:
+			return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+		default:
+			break;
+	}
+	
+	panicNode(n,"not a l-value");
+
+}
+
+LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n)
+{
+	switch(n->type)
+	{
+		case IDENTIFIER:
+		{
+
+			if(ctx->builder==NULL)
+				panicNode(n,"expresion has to be constant");
+
+			Variable* v=getVariable(ctx, n->value);
+
+			if(v==NULL)
+				panicNode(n,"'%s' undeclared",n->value);
+
+			return v->llvm_value;
+
+		}
+		case OPERATION:
+			return llvmBuildLOperation(ctx,n);
+		default:
+			panicNode(n,"not an L-expresion");
+	}
+}
+
+/* Statement */
 
 void llvmBuildStatement(Context* ctx, Node* n)
 {
@@ -527,6 +534,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 	}
 }
 
+/* Type */
 
 LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 {

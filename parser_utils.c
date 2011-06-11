@@ -389,12 +389,10 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 	else if(operator_parser(s,&o,true))
 	{
 
-		*left=(Node){.type=OPERATION};
-
-		Node operator_node={.type=OPERATOR};
-		makeString(s, s->offset-strlen(operators[o].chars), strlen(operators[o].chars), &operator_node.source);
-		operator_node.operator=o;
-		addChild(left,operator_node);
+		*left=(Node){
+			.type=OPERATION,
+			.operator=o,
+		};
 
 		Node right={0};
 		if(!parseOperatorExpresion2(s,&right,leaf_parser,operator_parser,operators[o].priority,operators[o].rightAssociative))
@@ -418,19 +416,14 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 			if( operators[o].priority<parentPriority || (operators[o].priority==parentPriority && rightAssociative))
 			{
 
-				Node tmp={.type=OPERATION};
+				Node tmp=(Node){
+					.type=OPERATION,
+					.operator=o,
+				};
 
-
-				Node operator_node={.type=IDENTIFIER};
-				makeString(s, backup_offset, s->offset-backup_offset, &operator_node.source);
-				operator_node.operator=o;
-
-				addChild(&tmp,operator_node);
 				addChild(&tmp,*left);
 
-
 				*left=tmp;
-
 
 				if(operators[o].closing_bracket!=NULL)
 				{
