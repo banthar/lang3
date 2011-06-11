@@ -1,3 +1,4 @@
+#!./lang
 
 function write(x:Int):Void;
 function read():Int;

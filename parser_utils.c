@@ -117,6 +117,20 @@ static bool readComment(Stream* s, String* out)
 		return true;
 
 	}
+	else if(isString(s,"#"))
+	{
+		seekStream(s,2);
+
+		while(!isString(s,"\n") && !isEof(s))
+		{
+			seekStream(s,1);
+		}
+
+		seekStream(s,1);
+
+		return true;
+
+	}	
 	else
 	{
 		return false;
