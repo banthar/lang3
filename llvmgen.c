@@ -210,6 +210,27 @@ static Type* getTypeById(const Context* ctx, LLVMTypeRef id)
 	return getTypeById(ctx->parent,id);
 }
 
+int llvmGetFieldId(Context* ctx, Node* n, LLVMTypeRef llvmType)
+{
+	Type* type=getTypeById(ctx,llvmType);
+	assert(type!=NULL);
+	
+	Node* structNode=getChild(type->declaration,1);
+	
+	assert(structNode->type==STRUCT_TYPE);
+	
+	for(int i=0;i<getChildrenCount(structNode);i++)
+	{
+		const char* name=getChild(getChild(structNode,i),0)->value;
+		
+		if(strcmp(name,n->value)==0)
+			return i;
+	}
+
+	panicNode(n,"no field '%s' in type '%s'",n->value,getChild(type->declaration,0)->value);
+
+}
+
 /* Expression */
 
 LLVMValueRef llvmBuildIncrement(Context* ctx, LLVMValueRef value)
@@ -308,6 +329,20 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 				LLVMValueRef ptr=LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
 				return LLVMBuildLoad(ctx->builder,ptr,"");
 			}
+		case OPERATOR_ELEMENT:
+			{
+				LLVMValueRef left=arg(0);
+
+				LLVMTypeRef left_type=LLVMTypeOf(left);
+
+				assert(LLVMGetTypeKind(left_type)==LLVMStructTypeKind);
+
+				int field_id=llvmGetFieldId(ctx, getChild(n,1),left_type);
+
+				return LLVMBuildExtractValue(ctx->builder, left,field_id, "");
+                                     
+				return LLVMBuildStructGEP(ctx->builder, left,field_id,"");
+			}			
 		default:
 			break;
 	}
@@ -390,12 +425,12 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 
 				assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
 
-				Type* t=getTypeById(ctx,struct_type);
+				int field_id=llvmGetFieldId(ctx, getChild(n,1),struct_type);
 
 				//TODO
-				printf("type: %p",t);
+				//printf("type: %p",t);
 
-				return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
+				return LLVMBuildStructGEP(ctx->builder, left,field_id,"");
 			}
 		case OPERATOR_INDEX:
 			return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
@@ -454,7 +489,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				v.declaration=n;
 				v.llvm_value=LLVMBuildAlloca(ctx->builder, llvmBuildType(ctx,getChild(n,1)), getChild(n,0)->value );
 
-				if(getChildrenCount(n)>1)
+				if(getChildrenCount(n)>2)
 					LLVMBuildStore(ctx->builder,llvmBuildExpresion(ctx,getChild(n,2)),v.llvm_value);
 
 				addVariable(ctx,v);
