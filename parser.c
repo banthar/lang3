@@ -65,6 +65,16 @@ bool parseSimpleExpresion(Stream* s, Node* out)
 		parseExpresion(s,out) or panicStream(s,"expected expresion");
 		expect(s,")");
 	}
+	else if(readStringConstant(s,&out->source))
+	{
+		out->type=STRING_CONSTANT;
+		out->value=unquoteString(&out->source);
+	}	
+	else if(readCharConstant(s,&out->source))
+	{
+		out->type=CHAR_CONSTANT;
+		out->value=unquoteString(&out->source);
+	}	
 	else
 	{
 		return false;
@@ -326,7 +336,7 @@ Module* parseModule(Stream* s)
 		longjmp(env,true);
 	}
 
-	s->errorHandler=errorHandler;
+	//s->errorHandler=errorHandler;
 
 	readWhitespace(s);
 	int start=s->offset;

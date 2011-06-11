@@ -190,6 +190,14 @@ static Type* getTypeById(const Context* ctx, LLVMTypeRef id)
 LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 {
 
+	LLVMValueRef arg(int index)
+	{
+		assert(getChildrenCount(n)>index);
+
+		return llvmBuildExpresion(ctx,getChild(n,index+1));
+
+	}
+
 	LLVMValueRef larg(int index)
 	{
 		assert(getChildrenCount(n)>index);
@@ -217,7 +225,11 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 
 		return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
 	}
-
+	else if(strcmp(getChild(n,0)->value,"[]")==0)
+	{
+		return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+	}
+	
 	panicNode(n,"not a l-value");
 
 }
@@ -271,7 +283,13 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	{
 		return LLVMBuildStore(ctx->builder,arg(1),larg(0));
 	}
-
+	else if(strcmp(getChild(n,0)->value,"[]")==0)
+	{
+		LLVMValueRef ptr=LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+		
+		return LLVMBuildLoad(ctx->builder,ptr,"");
+	}
+	
 	for(Operator* o=operators;o->name!=NULL;o++)
 	{
 		if(strcmp(o->name,getChild(n,0)->value)==0)
@@ -325,6 +343,26 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 	{
 		case NUMERIC_CONSTANT:
 			return LLVMConstIntOfString(LLVMInt32Type(), n->value, 10);
+		case CHAR_CONSTANT:
+			if(strlen(n->value)!=1)
+				panicNode(n,"invalid char constant");
+			return LLVMConstInt(LLVMInt8Type(), n->value[0],false);
+		case STRING_CONSTANT:
+		{
+			LLVMValueRef string=LLVMConstString(n->value, strlen(n->value),false);
+			/*
+			LLVMValueRef global=LLVMAddGlobal(ctx->module, LLVMTypeOf(string), ".str");
+			LLVMSetGlobalConstant(global,true);
+			LLVMSetInitializer(global,string);
+			LLVMSetLinkage(global,LLVMPrivateLinkage);
+			return LLVMConstGEP( global,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2);
+			*/
+			
+			LLVMValueRef ptr=LLVMBuildAlloca(ctx->builder,LLVMTypeOf(string),"");
+			LLVMBuildStore(ctx->builder,string,ptr);
+			return LLVMBuildGEP( ctx->builder, ptr,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2,"");
+
+		}
 		case IDENTIFIER:
 			return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n),n->value);
 		case OPERATION:
@@ -628,6 +666,7 @@ void llvmDefineFunction(Context* ctx, Node* n)
 
 	}
 
+	ctx->terminated=false;
 
 	llvmBuildStatement(ctx,getChild(n,2));
 
@@ -700,7 +739,7 @@ LLVMModuleRef compileModule(Module *m)
 			//llvmBuildFunction(&ctx,n);
 	}
 
-	//LLVMDumpModule(ctx.module);
+	LLVMDumpModule(ctx.module);
 	LLVMVerifyModule(ctx.module,LLVMAbortProcessAction,NULL);
 
 	LLVMPassManagerRef manager=LLVMCreatePassManager();
@@ -713,7 +752,7 @@ LLVMModuleRef compileModule(Module *m)
 	LLVMRunPassManager(manager,ctx.module);
 	LLVMDisposePassManager(manager);
 
-	//LLVMDumpModule(ctx.module);
+	LLVMDumpModule(ctx.module);
 
 	destroyContext(&ctx);
 	
@@ -721,9 +760,14 @@ LLVMModuleRef compileModule(Module *m)
 
 }
 
+void writeString(const char* s)
+{
+	printf("%s\n",s);
+}
+
 void writeInt(int i)
 {
-	printf("%i\n",i);
+	printf("%d\n",i);
 }
 
 int readInt()
@@ -749,8 +793,9 @@ int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 		return -1;
 	}
 
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"write"),(void*)&writeInt);
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"read"),(void*)&readInt);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"writeInt"),(void*)&writeInt);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"writeString"),(void*)&writeString);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"readInt"),(void*)&readInt);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"atoi"),(void*)&atoi);
 
 	int returnValue=LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),argc,argv,(const char*[]){NULL});

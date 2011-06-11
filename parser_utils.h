@@ -12,6 +12,10 @@ typedef bool (*OperatorParser)(Stream*,Node*,Operator*);
 
 bool readIdentifier(Stream* s, String* out);
 bool readNumber(Stream* s, String* out);
+bool readStringConstant(Stream*s, String* out);
+bool readCharConstant(Stream*s, String* out);
+
+char* unquoteString(const String* s);
 
 bool readWhitespace(Stream* s);
 

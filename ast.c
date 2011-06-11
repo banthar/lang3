@@ -6,6 +6,30 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+const char* nodeTypeNames[]={
+	"NONE",
+	"IDENTIFIER",
+	"NUMERIC_CONSTANT",
+	"CHAR_CONSTANT",
+	"STRING_CONSTANT",
+	"OPERATION",
+
+	"TYPE_DECLARATION",
+	"VARIABLE_DECLARATION",
+	"FUNCTION_DECLARATION",
+
+	"POINTER_TYPE",
+	"STRUCT_TYPE",
+	"FUNCTION_TYPE",
+
+	"IF_STATEMENT",
+	"WHILE_STATEMENT",
+	"FOR_STATEMENT",
+	"RETURN_STATEMENT",
+	"BREAK_STATEMENT",
+	"CONTINUE_STATEMENT",
+	"BLOCK",
+};
 
 static bool isWhitespace(int c)
 {
@@ -23,6 +47,9 @@ static bool isWhitespace(int c)
 
 __attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...)
 {
+	assert(n!=NULL);
+	dumpNode(n);
+	
 	va_list args;
 	va_start(args,format);
 	vpanicString(&n->source, format, args);	
@@ -30,16 +57,16 @@ __attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...)
 }
 
 
-void dumpNode(Node* n)
+void dumpNode(const Node* n)
 {
 
-	void aux(Node* n, int depth)
+	void aux(const Node* n, int depth)
 	{
 
 		for(int i=0;i<depth;i++)
 			fprintf(stderr," ");
 
-		fprintf(stderr,"%i %s \"",n->type,n->value);
+		fprintf(stderr,"%s(%s) \"",nodeTypeNames[n->type],n->value==NULL?"":n->value);
 
 		//printString(stderr, &n->source);
 

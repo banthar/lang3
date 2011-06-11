@@ -202,7 +202,12 @@ void warnStream(const Stream* s, const char* format, ...)
 
 void vpanicString(const String* s, const char* format, va_list args)
 {
-    printPosition(s->stream,s->offset,s->length);
+	
+	assert(s!=NULL);
+	assert(s->stream!=NULL);
+
+	printPosition(s->stream,s->offset,s->length);
+		
     fprintf(stderr, "error: ");
 
 	vfprintf(stderr,format,args);

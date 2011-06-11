@@ -249,6 +249,67 @@ bool readNumber(Stream* s, String* out)
 
 }
 
+bool readStringConstant(Stream*s, String* out)
+{
+	
+	readWhitespace(s);
+	
+	if(peekStream(s,0)!='"')
+		return false;
+	
+	int start=s->offset;
+
+	seekStream(s,1);
+
+	while(peekStream(s,0)!='"')
+	{
+		seekStream(s,1);
+		if(peekStream(s,0)=='\0')
+			panicStream(s,"expected '\"' not EOF");
+	}
+	
+	seekStream(s,1);
+	
+	makeString(s, start, s->offset-start, out);
+	return true;
+	
+}
+
+bool readCharConstant(Stream*s, String* out)
+{
+	
+	readWhitespace(s);
+	
+	if(peekStream(s,0)!='\'')
+		return false;
+	
+	int start=s->offset;
+
+	seekStream(s,1);
+
+	while(peekStream(s,0)!='\'')
+	{
+		seekStream(s,1);
+		if(peekStream(s,0)=='\0')
+			panicStream(s,"expected ''' not EOF");
+	}
+	
+	seekStream(s,1);
+	
+	makeString(s, start, s->offset-start, out);
+	return true;
+	
+}
+
+char* unquoteString(const String* s)
+{
+	//TODO
+	
+	return strndup(s->stream->data+s->offset+1,s->length-2);
+}
+
+/* helpers */
+
 bool childParse(Stream* s, Node* parent, bool (*parser)(Stream* s, Node* out))
 {
 	Node n={0};
@@ -359,14 +420,17 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 				Node tmp={.type=OPERATION};
 
+
 				Node operator_node={.type=IDENTIFIER};
 				makeString(s, backup_offset, s->offset-backup_offset, &operator_node.source);
 				operator_node.value=strdup(o.name);
 
 				addChild(&tmp,operator_node);
-
 				addChild(&tmp,*left);
+
+
 				*left=tmp;
+
 
 				if(o.closing_bracket!=NULL)
 				{
@@ -389,8 +453,6 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 				else if(o.type==INFIX)
 				{
 
-
-
 					Node right={0};
 					if(!parseOperatorExpresion2(s,&right,leaf_parser,operator_parser,o.priority,o.rightAssociative))
 						panicStream(s,"expected expresion");
@@ -398,6 +460,7 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 					addChild(left,right);
 				}
 
+				makeString(s, start, s->offset-start, &left->source);
 
 				continue;
 

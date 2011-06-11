@@ -56,11 +56,11 @@ int main(int argc, const char* argv[])
 		{
 			if(argv[i][0]=='-')
 			{
-				if(strcmp(argv[i],"-dump-pt")==0)
+				if(strcmp(argv[i],"--dump-pt")==0)
 				{
 					config.dumpPT=true;
 				}
-				else if(strcmp(argv[i],"-dump-llvm")==0)
+				else if(strcmp(argv[i],"--dump-llvm")==0)
 				{
 					config.dumpLLVM=true;
 				}				

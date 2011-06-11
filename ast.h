@@ -7,9 +7,11 @@
 
 typedef enum
 {
-	NONE=0,
+	NONE,
 	IDENTIFIER,
 	NUMERIC_CONSTANT,
+	CHAR_CONSTANT,
+	STRING_CONSTANT,
 	OPERATION,
 
 	TYPE_DECLARATION,
@@ -27,9 +29,9 @@ typedef enum
 	BREAK_STATEMENT,
 	CONTINUE_STATEMENT,
 	BLOCK,
-
-
 }NodeType;
+
+extern const char* nodeTypeNames[];
 
 typedef struct Node Node;
 struct Node
@@ -49,7 +51,7 @@ void freeNode(Node* n);
 void addChild(Node* parent, const Node children);
 Node* getChild(const Node* parent, const int index);
 int getChildrenCount(const Node* parent);
-void dumpNode(Node* n);
+void dumpNode(const Node* n);
 void freeModule(Module *m);
 
 #endif
