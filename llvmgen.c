@@ -366,19 +366,15 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 			return LLVMConstInt(LLVMInt8Type(), n->value[0],false);
 		case STRING_CONSTANT:
 		{
-			LLVMValueRef string=LLVMConstString(n->value, strlen(n->value),false);
-			/*
-			LLVMValueRef global=LLVMAddGlobal(ctx->module, LLVMTypeOf(string), ".str");
-			LLVMSetGlobalConstant(global,true);
-			LLVMSetInitializer(global,string);
-			LLVMSetLinkage(global,LLVMPrivateLinkage);
-			return LLVMConstGEP( global,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2);
-			*/
-			
+			LLVMValueRef string=LLVMConstString(n->value, strlen(n->value),false);			
 			LLVMValueRef ptr=LLVMBuildAlloca(ctx->builder,LLVMTypeOf(string),"");
 			LLVMBuildStore(ctx->builder,string,ptr);
 			return LLVMBuildGEP( ctx->builder, ptr,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2,"");
 
+		}
+		case STRUCT_CONSTANT:
+		{
+			panicNode(n,"TODO");
 		}
 		case IDENTIFIER:
 			return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n),n->value);
