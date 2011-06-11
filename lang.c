@@ -8,16 +8,38 @@
 
 typedef struct
 {
-	bool dump;
+	bool dumpPT;
+	bool dumpLLVM;
+	bool dontRun;
 }Config;
 
 int run(Config config, int argc, const char* argv[])
 {
 	Stream* s=openStream(argv[0]);
 	Module* m=parseModule(s);
+
+	if(m==NULL)
+	{
+		closeStream(s);
+		return -1;
+	}
+	
+	if(config.dumpPT)
+	{
+		dumpNode(m);
+	}
+		
 	LLVMModuleRef llvmModule=compileModule(m);
 	closeStream(s);
 	freeModule(m);
+
+	if(config.dumpLLVM)
+	{
+		LLVMDumpModule(llvmModule);
+	}
+	
+	if(config.dontRun)
+		return 0;
 	
 	return runModule(llvmModule,argc,argv);
 
@@ -34,6 +56,18 @@ int main(int argc, const char* argv[])
 		{
 			if(argv[i][0]=='-')
 			{
+				if(strcmp(argv[i],"-dump-pt")==0)
+				{
+					config.dumpPT=true;
+				}
+				else if(strcmp(argv[i],"-dump-llvm")==0)
+				{
+					config.dumpLLVM=true;
+				}				
+				else
+				{
+					panic("unknown option: %s",argv[i]);
+				}
 			}
 			else
 			{
@@ -43,44 +77,6 @@ int main(int argc, const char* argv[])
 	}
 
 	panic("no filename specified");
-
-/*
-	assert(argc==3);
-
-	assert(strlen(argv[1])==2);
-	assert(argv[1][0]=='-');
-
-	Stream* s=openStream(argv[2]);
-	Module* m=parseModule(s);
-
-	if(m==NULL)
-	{
-		closeStream(s);
-		return 1;
-	}
-
-	switch(argv[1][1])
-	{
-		case 'c':
-			compileModule(m);
-			break;
-		case 'd':
-			dumpNode(m);
-			break;
-		case 'r':
-			{
-				LLVMModuleRef llvmModule=compileModule(m);
-				runModule(llvmModule);
-			}
-			break;
-		default:
-			panic("unknown action -%c",argv[1][1]);
-	}
-
-	freeModule(m);
-	closeStream(s);
-	return 0;
-*/
 
 }
 

@@ -5,9 +5,7 @@ function atoi(a:*Char):Int;
 
 function main(argc:Int,argv:**Char):Int
 {
-
 	write(argc);
-	
 	return 0;
 }
 
