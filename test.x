@@ -10,7 +10,7 @@ function main(argc:Int,argv:**Char):Int
 	var i:Int=0;
 	while(i<argc)
 	{
-		writeString(*argv[i]);
+		writeString(*&argv[i]);
 		i=i+1;
 	}
 	return 0;

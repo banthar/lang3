@@ -16,17 +16,19 @@ bool parseType(Stream* s, Node* out);
 bool parseDeclaration(Stream* s, Node* out);
 bool parseStatement(Stream* s, Node* out);
 
-bool parseOperator(Stream* s, Operator* out, bool prefix)
+bool parseOperator(Stream* s, OperatorId* out, bool prefix)
 {
 
-	for(int i=0;operators[i].name!=NULL;i++)
+	for(OperatorId op=0;op<OPERATOR_LAST;op++)
 	{
-		if((operators[i].type==PREFIX) == prefix)
-			if(readString(s,operators[i].chars))
+
+		if((operators[op].type==PREFIX) == prefix)
+			if(readString(s,operators[op].chars))
 			{
-				*out=operators[i];
+				*out=op;
 				return true;
 			}
+
 	}
 
 	return false;

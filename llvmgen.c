@@ -12,6 +12,29 @@
 #include "error.h"
 #include "operators.h"
 
+typedef struct
+{
+	LLVMOpcode integer;
+	LLVMOpcode unsigned_integer;
+	LLVMOpcode real;	
+}OperatorOpcodes;
+
+static const OperatorOpcodes operatorOpcodes[]={
+	[OPERATOR_MUL]={ LLVMMul,  LLVMMul,  LLVMFMul},
+	{ LLVMFDiv, LLVMFDiv, LLVMFDiv},
+	{ LLVMSDiv, LLVMUDiv, 0},
+	{ LLVMSRem, LLVMURem, LLVMFRem},
+	{ LLVMAdd,  LLVMAdd,  LLVMFAdd},
+	{ LLVMSub,  LLVMSub,  LLVMFSub},
+
+	{ LLVMIntSLT, LLVMIntULT, LLVMRealOLT},
+	{ LLVMIntSGT, LLVMIntUGT, LLVMRealOGT},
+	{ LLVMIntSLE, LLVMIntULE, LLVMRealOLE},
+	{ LLVMIntSGE, LLVMIntUGE, LLVMRealOGE},
+	{ LLVMIntEQ, LLVMIntEQ, LLVMRealOEQ},
+	{ LLVMIntNE, LLVMIntNE, LLVMRealONE},
+};
+
 typedef struct Context Context;
 
 typedef struct
@@ -206,28 +229,31 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 
 	}
 
-	if(strcmp(getChild(n,0)->value,".")==0)
+	switch(getChild(n,0)->operator)
 	{
-		LLVMValueRef left=larg(0);
+		case OPERATOR_ELEMENT:
+			{
+				LLVMValueRef left=larg(0);
 
-		LLVMTypeRef left_type=LLVMTypeOf(left);
+				LLVMTypeRef left_type=LLVMTypeOf(left);
 
-		assert(LLVMGetTypeKind(left_type)==LLVMPointerTypeKind);
+				assert(LLVMGetTypeKind(left_type)==LLVMPointerTypeKind);
 
-		LLVMTypeRef struct_type=LLVMGetElementType(left_type);
+				LLVMTypeRef struct_type=LLVMGetElementType(left_type);
 
-		assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
+				assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
 
-		Type* t=getTypeById(ctx,struct_type);
+				Type* t=getTypeById(ctx,struct_type);
 
-		//TODO
-		printf("type: %p",t);
+				//TODO
+				printf("type: %p",t);
 
-		return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
-	}
-	else if(strcmp(getChild(n,0)->value,"[]")==0)
-	{
-		return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+				return LLVMBuildStructGEP(ctx->builder, left,0,cstrString(&n->source));
+			}
+		case OPERATOR_INDEX:
+			return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+		default:
+			break;
 	}
 	
 	panicNode(n,"not a l-value");
@@ -253,60 +279,52 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 
 	}
 
-	if(strcmp(getChild(n,0)->value,"prefix+")==0)
+	switch(operators[getChild(n,0)->operator].category)
 	{
-		return arg(0);
+		case BINARY_ARITHMETIC:
+			return LLVMBuildBinOp(ctx->builder, operatorOpcodes[getChild(n,0)->operator].integer,arg(0),arg(1),cstrString(&n->source));
+		case COMPARISION:
+			return LLVMBuildICmp(ctx->builder, operatorOpcodes[getChild(n,0)->operator].integer, arg(0),arg(1),cstrString(&n->source));
+		default:
+			break;
 	}
-	else if(strcmp(getChild(n,0)->value,"prefix-")==0)
-	{
-		return LLVMBuildNeg(ctx->builder,arg(0),cstrString(&n->source));
-	}
-	else if(strcmp(getChild(n,0)->value,"()")==0)
-	{
 
-		int num_args=getChildrenCount(n)-2;
-		LLVMValueRef args[num_args];
-
-		for(int i=0;i<num_args;i++)
-		{
-			args[i]=arg(i+1);
-		}
-
-		return LLVMBuildCall(ctx->builder, larg(0), args,num_args,"");
-
-	}
-	else if(strcmp(getChild(n,0)->value,".")==0)
+	switch(getChild(n,0)->operator)
 	{
-		return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n),cstrString(&n->source));
-	}
-	else if(strcmp(getChild(n,0)->value,"=")==0)
-	{
-		return LLVMBuildStore(ctx->builder,arg(1),larg(0));
-	}
-	else if(strcmp(getChild(n,0)->value,"[]")==0)
-	{
-		LLVMValueRef ptr=LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
-		
-		return LLVMBuildLoad(ctx->builder,ptr,"");
-	}
-	
-	for(Operator* o=operators;o->name!=NULL;o++)
-	{
-		if(strcmp(o->name,getChild(n,0)->value)==0)
-		{
-			switch(o->category)
+		case OPERATOR_PREFIX_PLUS:
+			return arg(0);
+		case OPERATOR_PREFIX_MINUS:
+			return LLVMBuildNeg(ctx->builder,arg(0),cstrString(&n->source));
+		case OPERATOR_CALL:
 			{
-				case BINARY_ARITHMETIC:
-					return LLVMBuildBinOp(ctx->builder, o->int_opcode,arg(0),arg(1),cstrString(&n->source));
-				case COMPARISION:
-					return LLVMBuildICmp(ctx->builder, o->int_opcode, arg(0),arg(1),cstrString(&n->source));
-				default:
-					break;
+
+				int num_args=getChildrenCount(n)-2;
+				LLVMValueRef args[num_args];
+
+				for(int i=0;i<num_args;i++)
+				{
+					args[i]=arg(i+1);
+				}
+
+				return LLVMBuildCall(ctx->builder, larg(0), args,num_args,"");
+
 			}
-		}
+		case OPERATOR_ASSIGMENT:
+			return LLVMBuildStore(ctx->builder,arg(1),larg(0));
+		case OPERATOR_ADDRESS:
+			return larg(0);
+		case OPERATOR_DEREF:
+			return LLVMBuildLoad(ctx->builder,arg(0),"");
+		case OPERATOR_INDEX:
+			{
+				LLVMValueRef ptr=LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+				return LLVMBuildLoad(ctx->builder,ptr,"");
+			}
+		default:
+			break;
 	}
 
-	panicNode(n,"operator '%s' not implemented",getChild(n,0)->value);
+	panicNode(n,"operator '%s' not implemented",operators[getChild(n,0)->operator].name);
 
 }
 

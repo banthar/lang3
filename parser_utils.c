@@ -367,7 +367,7 @@ bool parseSeparated(Stream* s, Node* parent, bool (*parser)(Stream* s, Node* out
 
 }
 
-static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(Stream* s, Node* out), bool (*operator_parser)(Stream*,Operator*,bool), int parentPriority, bool rightAssociative)
+static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(Stream* s, Node* out), bool (*operator_parser)(Stream*,OperatorId*,bool), int parentPriority, bool rightAssociative)
 {
 
 	bool expresionParser(Stream* s, Node* out)
@@ -377,7 +377,7 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 
 	assert(s!=NULL && left!=NULL && leaf_parser!=NULL && operator_parser);
-	Operator o;
+	OperatorId o;
 
 	readWhitespace(s);
 
@@ -391,13 +391,13 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 		*left=(Node){.type=OPERATION};
 
-		Node operator_node={.type=IDENTIFIER};
-		makeString(s, s->offset-strlen(o.chars), strlen(o.chars), &operator_node.source);
-		operator_node.value=strdup(o.name);
+		Node operator_node={.type=OPERATOR};
+		makeString(s, s->offset-strlen(operators[o].chars), strlen(operators[o].chars), &operator_node.source);
+		operator_node.operator=o;
 		addChild(left,operator_node);
 
 		Node right={0};
-		if(!parseOperatorExpresion2(s,&right,leaf_parser,operator_parser,o.priority,o.rightAssociative))
+		if(!parseOperatorExpresion2(s,&right,leaf_parser,operator_parser,operators[o].priority,operators[o].rightAssociative))
 			panicStream(s,"expected expresion");
 
 		addChild(left,right);
@@ -415,7 +415,7 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 		if(operator_parser(s,&o,false))
 		{
-			if( o.priority<parentPriority || (o.priority==parentPriority && rightAssociative))
+			if( operators[o].priority<parentPriority || (operators[o].priority==parentPriority && rightAssociative))
 			{
 
 				Node tmp={.type=OPERATION};
@@ -423,7 +423,7 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 				Node operator_node={.type=IDENTIFIER};
 				makeString(s, backup_offset, s->offset-backup_offset, &operator_node.source);
-				operator_node.value=strdup(o.name);
+				operator_node.operator=o;
 
 				addChild(&tmp,operator_node);
 				addChild(&tmp,*left);
@@ -432,7 +432,7 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 				*left=tmp;
 
 
-				if(o.closing_bracket!=NULL)
+				if(operators[o].closing_bracket!=NULL)
 				{
 
 					while(true)
@@ -447,14 +447,14 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 					}
 
-					expect(s,o.closing_bracket);
+					expect(s,operators[o].closing_bracket);
 
 				}
-				else if(o.type==INFIX)
+				else if(operators[o].type==INFIX)
 				{
 
 					Node right={0};
-					if(!parseOperatorExpresion2(s,&right,leaf_parser,operator_parser,o.priority,o.rightAssociative))
+					if(!parseOperatorExpresion2(s,&right,leaf_parser,operator_parser,operators[o].priority,operators[o].rightAssociative))
 						panicStream(s,"expected expresion");
 
 					addChild(left,right);
@@ -484,7 +484,7 @@ static bool parseOperatorExpresion2(Stream* s, Node* left, bool (*leaf_parser)(S
 
 }
 
-bool parseOperatorExpresion(Stream* s, Node* out, bool (*leaf_parser)(Stream* s, Node* out), bool (*operator_parser)(Stream*,Operator*,bool))
+bool parseOperatorExpresion(Stream* s, Node* out, bool (*leaf_parser)(Stream* s, Node* out), bool (*operator_parser)(Stream*,OperatorId*,bool))
 {
 	return parseOperatorExpresion2(s,out,leaf_parser,operator_parser,INT_MAX,false);
 }
