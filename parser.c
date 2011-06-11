@@ -156,11 +156,11 @@ bool parseStatement(Stream* s, Node* out)
 		out->type=FOR_STATEMENT;
 
 		expect(s,"(");
-
-		childParse(s,out,parseIdentifier) or panicStream(s,"expected identifier");
-
-		expect(s,"in");
+		childParse(s,out,parseStatement) or panicStream(s,"expected statement");
+		expect(s,";");
 		childParse(s,out,parseExpresion) or panicStream(s,"expected expresion");
+		expect(s,";");
+		childParse(s,out,parseStatement) or panicStream(s,"expected statement");
 		expect(s,")");
 		childParse(s,out,parseStatement) or panicStream(s,"expected statement");
 

@@ -491,7 +491,6 @@ void llvmBuildStatement(Context* ctx, Node* n)
 		case WHILE_STATEMENT:
 			{
 				
-				
 				Context loop_ctx=pushContext(ctx);
 				
 				loop_ctx.continueBlock=LLVMAppendBasicBlock(loop_ctx.function,"while_begin");
@@ -514,6 +513,39 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				popContext(&loop_ctx);
 				ctx->terminated=false;
 				
+			}
+			break;
+		case FOR_STATEMENT:
+			{
+				Context loop_ctx=pushContext(ctx);
+				
+				llvmBuildStatement(&loop_ctx,getChild(n,0));
+				
+				LLVMBasicBlockRef beginBlock=LLVMAppendBasicBlock(loop_ctx.function,"for_begin");
+				LLVMBasicBlockRef bodyBlock=LLVMAppendBasicBlock(loop_ctx.function,"for_body");
+				loop_ctx.continueBlock=LLVMAppendBasicBlock(loop_ctx.function,"for_end");
+				loop_ctx.breakBlock=LLVMAppendBasicBlock(loop_ctx.function,"for_break");
+				
+				LLVMBuildBr(loop_ctx.builder, beginBlock);
+				
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, beginBlock);
+				LLVMValueRef condition=llvmBuildExpresion(&loop_ctx,getChild(n,1));
+				LLVMBuildCondBr(loop_ctx.builder, condition,bodyBlock,loop_ctx.breakBlock);
+
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, bodyBlock);
+				llvmBuildStatement(&loop_ctx,getChild(n,3));
+				if(!loop_ctx.terminated)
+					LLVMBuildBr(loop_ctx.builder, loop_ctx.continueBlock);
+
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, loop_ctx.continueBlock);
+				llvmBuildStatement(&loop_ctx,getChild(n,2));
+				if(!loop_ctx.terminated)
+					LLVMBuildBr(loop_ctx.builder, beginBlock);
+				
+				LLVMPositionBuilderAtEnd(loop_ctx.builder, loop_ctx.breakBlock);
+				
+				popContext(&loop_ctx);
+				ctx->terminated=false;
 			}
 			break;
 		case BREAK_STATEMENT:

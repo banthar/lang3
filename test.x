@@ -7,12 +7,13 @@ function atoi(s:*Char):Int;
 
 function main(argc:Int,argv:**Char):Int
 {
-	var i:Int=0;
-	while(i<argc)
+
+	for(var i:Int=0;i<argc;i++)
 	{
 		writeString(argv[i]);
-		i++;
 	}
+
 	return 0;
+
 }
 
