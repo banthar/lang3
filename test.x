@@ -3,13 +3,16 @@
 function writeString(s:*Char):Void;
 function writeInt(s:*Char):Void;
 function read():Int;
-function atoi(a:*Char):Int;
+function atoi(s:*Char):Int;
 
 function main(argc:Int,argv:**Char):Int
 {
-	var tmp:*Char="XXX";
-	tmp[0]='x';
-	writeString(tmp);
+	var i:Int=0;
+	while(i<argc)
+	{
+		writeString(*argv[i]);
+		i=i+1;
+	}
 	return 0;
 }
 

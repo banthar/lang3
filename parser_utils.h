@@ -4,7 +4,7 @@
 
 #include "bool.h"
 #include "stream.h"
-#include "ast.h"
+#include "ptree.h"
 #include "operators.h"
 
 typedef bool (*NodeParser)(Stream*,Node*);

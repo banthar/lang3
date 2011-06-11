@@ -4,7 +4,7 @@ CFLAGS+=-Wall -std=gnu99
 CFLAGS+=-O2
 
 HEADERS:=$(shell find -iname "*.h")
-OBJECTS:=ast.o error.o lang.o llvmgen.o operators.o parser.o parser_utils.o stream.o
+OBJECTS:=ptree.o error.o lang.o llvmgen.o operators.o parser.o parser_utils.o stream.o
 
 #LLVM_CONFIG:=/usr/local/bin/llvm-config
 LLVM_CONFIG:=llvm-config-2.9
