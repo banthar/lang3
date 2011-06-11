@@ -17,11 +17,11 @@ Operator operators[]=
 	{"deref",   PREFIX, 2, false,"*",  NULL, UNKNOWN},
 	{"&",       PREFIX, 2, false,"&",  NULL, UNKNOWN},
 
-	{"prefix+", PREFIX, 2, false,"+",  NULL, UNKNOWN},
-	{"prefix-", PREFIX, 2, false,"-",  NULL, UNKNOWN},
-
 	{"prefix++", PREFIX, 2, false,"++",  NULL, UNKNOWN},
 	{"prefix--", PREFIX, 2, false,"--",  NULL, UNKNOWN},
+
+	{"prefix+", PREFIX, 2, false,"+",  NULL, UNKNOWN},
+	{"prefix-", PREFIX, 2, false,"-",  NULL, UNKNOWN},
 
 	{"*",       INFIX,  3, false,"*",  NULL, BINARY_ARITHMETIC},
 	{"/",       INFIX,  3, false,"/",  NULL, BINARY_ARITHMETIC},

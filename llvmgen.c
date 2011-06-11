@@ -212,6 +212,20 @@ static Type* getTypeById(const Context* ctx, LLVMTypeRef id)
 
 /* Expression */
 
+LLVMValueRef llvmBuildIncrement(Context* ctx, LLVMValueRef value)
+{
+	LLVMTypeRef type=LLVMTypeOf(value);
+	LLVMValueRef one=LLVMConstInt(type,1,false);
+	return LLVMBuildAdd(ctx->builder,value,one,"");
+}
+
+LLVMValueRef llvmBuildDecrement(Context* ctx, LLVMValueRef value)
+{
+	LLVMTypeRef type=LLVMTypeOf(value);
+	LLVMValueRef one=LLVMConstInt(type,1,false);
+	return LLVMBuildSub(ctx->builder,value,one,"");
+}
+
 LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 {
 
@@ -247,6 +261,28 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 			return arg(0);
 		case OPERATOR_PREFIX_MINUS:
 			return LLVMBuildNeg(ctx->builder,arg(0),cstrString(&n->source));
+		case OPERATOR_PREFIX_INCREMENT:
+		case OPERATOR_PREFIX_DECREMENT:
+		case OPERATOR_POSTFIX_INCREMENT:
+		case OPERATOR_POSTFIX_DECREMENT:
+			{
+				LLVMValueRef lvalue=larg(0);
+				LLVMValueRef value=LLVMBuildLoad(ctx->builder,lvalue,"");
+				LLVMValueRef new_value;
+				
+				if(n->operator==OPERATOR_PREFIX_INCREMENT||n->operator==OPERATOR_POSTFIX_INCREMENT)
+					new_value=llvmBuildIncrement(ctx,value);
+				else
+					new_value=llvmBuildDecrement(ctx,value);
+				
+				LLVMBuildStore(ctx->builder,new_value,lvalue);
+				
+				if(n->operator==OPERATOR_PREFIX_INCREMENT || n->operator==OPERATOR_PREFIX_DECREMENT)
+					return new_value;
+				else
+					return value;
+					
+			}
 		case OPERATOR_CALL:
 			{
 
@@ -276,7 +312,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 			break;
 	}
 
-	panicNode(n,"operator '%s' not implemented",operators[getChild(n,0)->operator].name);
+	panicNode(n,"operator '%s' not implemented",operators[n->operator].name);
 
 }
 

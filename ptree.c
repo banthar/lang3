@@ -67,8 +67,11 @@ void dumpNode(const Node* n)
 		for(int i=0;i<depth;i++)
 			fprintf(stderr," ");
 
-		fprintf(stderr,"%s(%s) \"",nodeTypeNames[n->type],n->value==NULL?"":n->value);
-
+		if(n->type==OPERATION)
+			fprintf(stderr,"%s(%s) \"",nodeTypeNames[n->type],operators[n->operator].name);
+		else
+			fprintf(stderr,"%s(%s) \"",nodeTypeNames[n->type],n->value==NULL?"":n->value);
+			
 		//printString(stderr, &n->source);
 
 		int c=' ';
