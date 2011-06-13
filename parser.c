@@ -54,7 +54,19 @@ bool parseIdentifier(Stream* s, Node* out)
 bool parseSimpleExpresion(Stream* s, Node* out)
 {
 
-	if(parseIdentifier(s,out))
+	if(readString(s,"null"))
+	{
+		out->type=NULL_CONSTANT;
+	}
+	else if(readString(s,"true"))
+	{
+		out->type=TRUE_CONSTANT;
+	}
+	else if(readString(s,"false"))
+	{
+		out->type=FALSE_CONSTANT;
+	}
+	else if(parseIdentifier(s,out))
 	{
 	}
 	else if(readNumber(s,&out->source))

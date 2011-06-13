@@ -1,4 +1,4 @@
-#!./lang
+#!./lang --run
 
 function writeString(s:*Char):Void;
 function writeInt(i:Int):Void;
@@ -22,10 +22,16 @@ function Point(x:Int, y:Int):Point
 function main(argc:Int,argv:**Char):Int
 {
 
-	var p:Point={0,1};
+	var p:Point;
 
-	writeInt(p.y);
+	atoi("23");
 
+
+	if(true)
+	{
+		return read();
+	}
+	
 	return 0;
 
 }

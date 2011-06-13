@@ -3,6 +3,10 @@
 #include "parser.h"
 #include "llvmgen.h"
 
+
+#include <llvm-c/Core.h>
+#include <llvm-c/BitWriter.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -10,7 +14,8 @@ typedef struct
 {
 	bool dumpPT;
 	bool dumpLLVM;
-	bool dontRun;
+	bool run;
+	const char* output;
 }Config;
 
 int run(Config config, int argc, const char* argv[])
@@ -38,17 +43,22 @@ int run(Config config, int argc, const char* argv[])
 		LLVMDumpModule(llvmModule);
 	}
 	
-	if(config.dontRun)
+	if(config.run)
+		return runModule(llvmModule,argc,argv);
+	else
+	{
+		
+		LLVMWriteBitcodeToFile(llvmModule,config.output);
 		return 0;
-	
-	return runModule(llvmModule,argc,argv);
-
+	}
 }
 
 int main(int argc, const char* argv[])
 {
 
-	Config config={0};
+	Config config={
+		.output="out.bc",
+	};
 
 	for(int i=1;i<argc;i++)
 	{
@@ -63,7 +73,17 @@ int main(int argc, const char* argv[])
 				else if(strcmp(argv[i],"--dump-llvm")==0)
 				{
 					config.dumpLLVM=true;
-				}				
+				}
+				else if(strcmp(argv[i],"--run")==0)
+				{
+					config.run=true;
+				}	
+				else if(strcmp(argv[i],"--output")==0)
+				{
+					assert(i+1<argc);
+					config.output=argv[i+1];
+					i++;
+				}	
 				else
 				{
 					panic("unknown option: %s",argv[i]);

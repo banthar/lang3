@@ -376,6 +376,12 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 		{
 			panicNode(n,"TODO");
 		}
+		case NULL_CONSTANT:
+			return LLVMConstNull(LLVMPointerType(LLVMVoidType(),0));
+		case TRUE_CONSTANT:
+			return LLVMConstInt(LLVMInt1Type(),1,false);
+		case FALSE_CONSTANT:
+			return LLVMConstInt(LLVMInt1Type(),0,false);
 		case IDENTIFIER:
 			return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n),n->value);
 		case OPERATION:
@@ -823,6 +829,32 @@ void llvmDefineVariable(Context* ctx, Node* n)
 
 }
 
+void addOptimizations(LLVMPassManagerRef pm)
+{
+	LLVMAddDemoteMemoryToRegisterPass(pm);
+	LLVMAddAggressiveDCEPass(pm);
+	LLVMAddCFGSimplificationPass(pm);
+	LLVMAddDeadStoreEliminationPass(pm);
+	LLVMAddGVNPass(pm);
+	LLVMAddIndVarSimplifyPass(pm);
+	LLVMAddInstructionCombiningPass(pm);
+	LLVMAddJumpThreadingPass(pm);
+	LLVMAddLICMPass(pm);
+	LLVMAddLoopDeletionPass(pm);
+	LLVMAddLoopRotatePass(pm);
+	LLVMAddLoopUnrollPass(pm);
+	LLVMAddLoopUnswitchPass(pm);
+	LLVMAddMemCpyOptPass(pm);
+	LLVMAddPromoteMemoryToRegisterPass(pm);
+	LLVMAddReassociatePass(pm);
+	LLVMAddSCCPPass(pm);
+	LLVMAddScalarReplAggregatesPass(pm);
+	LLVMAddSimplifyLibCallsPass(pm);
+	LLVMAddTailCallEliminationPass(pm);
+	LLVMAddConstantPropagationPass(pm);
+	LLVMAddVerifierPass(pm);
+}
+
 LLVMModuleRef compileModule(Module *m)
 {
 
@@ -873,6 +905,10 @@ LLVMModuleRef compileModule(Module *m)
 	LLVMAddJumpThreadingPass(manager);
 	LLVMAddSimplifyLibCallsPass(manager);
 	LLVMAddInstructionCombiningPass(manager);
+
+	addOptimizations(manager);
+	addOptimizations(manager);
+	addOptimizations(manager);
 
 	LLVMRunPassManager(manager,ctx.module);
 	LLVMDisposePassManager(manager);
