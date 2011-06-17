@@ -24,8 +24,10 @@ const char* nodeTypeNames[]={
 	"FUNCTION_DECLARATION",
 
 	"POINTER_TYPE",
+	"ARRAY_TYPE",
 	"STRUCT_TYPE",
 	"FUNCTION_TYPE",
+	"ELLIPSIS",
 
 	"IF_STATEMENT",
 	"WHILE_STATEMENT",
@@ -49,6 +51,21 @@ static bool isWhitespace(int c)
 			return false;
 	}
 }
+
+void assertNode(const Node* n, bool assertion, const char* format, ...)
+{
+	assert(n!=NULL);
+
+	if(!assertion)
+		return;
+
+	
+	va_list args;
+	va_start(args,format);
+	vpanicString(&n->source, format, args);	
+	va_end(args);
+}
+
 
 __attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...)
 {

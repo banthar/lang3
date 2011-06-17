@@ -8,6 +8,7 @@
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/Transforms/Scalar.h"
 
+#include "llvm_utils.h"
 #include "llvmgen.h"
 #include "error.h"
 #include "operators.h"
@@ -82,7 +83,6 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n);
 void llvmGenHeader(Context* ctx, Node* n);
 LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n);
 LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n);
-
 
 static Context pushContext(Context *ctx)
 {
@@ -326,7 +326,20 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 			return LLVMBuildLoad(ctx->builder,arg(0),"");
 		case OPERATOR_INDEX:
 			{
+				
 				LLVMValueRef ptr=LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+				LLVMTypeRef type=LLVMTypeOf(ptr);
+				
+				switch(LLVMGetTypeKind(type))
+				{
+					case LLVMPointerTypeKind:
+						return LLVMBuildLoad(ctx->builder,ptr,"");
+					default:
+						panicNode(n,"");
+				}
+				
+				assertNode(n,LLVMGetTypeKind(type)==LLVMPointerTypeKind,"is not indexable");
+				
 				return LLVMBuildLoad(ctx->builder,ptr,"");
 			}
 		case OPERATOR_ELEMENT:
@@ -435,7 +448,20 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 				return LLVMBuildStructGEP(ctx->builder, left,field_id,"");
 			}
 		case OPERATOR_INDEX:
-			return LLVMBuildGEP(ctx->builder, arg(0),(LLVMValueRef[]){arg(1)}, 1,"");
+			{
+				
+				LLVMValueRef array=arg(0);
+				LLVMTypeRef type=LLVMTypeOf(array);
+				
+				switch(LLVMGetTypeKind(type))
+				{
+					case LLVMPointerTypeKind:
+						return LLVMBuildGEP(ctx->builder, array,(LLVMValueRef[]){arg(1)}, 1,"");
+					default:
+						panicNode(n,"invalid use of []");
+				}
+				
+			}
 		default:
 			break;
 	}
@@ -665,6 +691,20 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 				return LLVMPointerType(llvmBuildType(ctx,getChild(n,0)),0);
 			}
 			break;
+		case ARRAY_TYPE:
+			{
+				if(getChildrenCount(n)!=2)
+					panicNode(n,"Array type needs two arguments");
+					
+				LLVMValueRef elem_count=llvmBuildExpresion(ctx,getChild(n,0));
+				
+				if(!LLVMIsConstant(elem_count))
+					panicNode(n,"Array size is not constant");
+				
+				return LLVMArrayType(llvmBuildType(ctx,getChild(n,1)),LLVMConstIntValue(elem_count));
+			}
+			break;
+			
 		case IDENTIFIER:
 			{
 
@@ -684,16 +724,28 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 			break;
 		case FUNCTION_TYPE:
 			{
-				LLVMTypeRef llvm_args[getChildrenCount(n)-1];
+				
+				bool varArg=false;
+				int nArgs;
+				
+				nArgs=getChildrenCount(n)-1;
+				
+				if(nArgs-1>=0 && getChild(n,nArgs-1)->type==ELLIPSIS)
+				{
+					nArgs-=1;
+					varArg=true;
+				}
+				
+				LLVMTypeRef llvm_args[nArgs];
 
-				for(int i=0;i<getChildrenCount(n)-1;i++)
+				for(int i=0;i<nArgs;i++)
 				{
 					llvm_args[i]=llvmBuildType(ctx,getChild(getChild(n,i),1));
 				}
 
 				LLVMTypeRef ret=llvmBuildType(ctx,getChild(n,getChildrenCount(n)-1));
 
-				return LLVMFunctionType(ret, llvm_args,getChildrenCount(n)-1,false);
+				return LLVMFunctionType(ret, llvm_args,nArgs,varArg);
 			}
 			break;
 		default:
@@ -810,7 +862,6 @@ void llvmDefineFunction(Context* ctx, Node* n)
 
 }
 
-
 void llvmDefineVariable(Context* ctx, Node* n)
 {
 
@@ -896,24 +947,24 @@ LLVMModuleRef compileModule(Module *m)
 			//llvmBuildFunction(&ctx,n);
 	}
 
-	LLVMDumpModule(ctx.module);
+	//LLVMDumpModule(ctx.module);
 	LLVMVerifyModule(ctx.module,LLVMAbortProcessAction,NULL);
 
 	LLVMPassManagerRef manager=LLVMCreatePassManager();
 	LLVMAddPromoteMemoryToRegisterPass(manager);
-	LLVMAddSCCPPass(manager);
-	LLVMAddJumpThreadingPass(manager);
-	LLVMAddSimplifyLibCallsPass(manager);
-	LLVMAddInstructionCombiningPass(manager);
+	//LLVMAddSCCPPass(manager);
+	//LLVMAddJumpThreadingPass(manager);
+	//LLVMAddSimplifyLibCallsPass(manager);
+	//LLVMAddInstructionCombiningPass(manager);
 
-	addOptimizations(manager);
-	addOptimizations(manager);
-	addOptimizations(manager);
+	//addOptimizations(manager);
+	//addOptimizations(manager);
+	//addOptimizations(manager);
 
 	LLVMRunPassManager(manager,ctx.module);
 	LLVMDisposePassManager(manager);
 
-	LLVMDumpModule(ctx.module);
+	//LLVMDumpModule(ctx.module);
 
 	destroyContext(&ctx);
 	
@@ -958,6 +1009,7 @@ int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"writeString"),(void*)&writeString);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"readInt"),(void*)&readInt);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"atoi"),(void*)&atoi);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"printf"),(void*)&printf);
 
 	int returnValue=LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),argc,argv,(const char*[]){NULL});
 					  

@@ -358,7 +358,7 @@ bool parseSeparated(Stream* s, Node* parent, bool (*parser)(Stream* s, Node* out
 
 	while(readString(s,separator))
 	{
-		parser(s,&n) or panicStream(s,"expected expresion");
+		parser(s,&n) or panicStream(s,"unexpected");
 		addChild(parent,n);
 		n=(Node){0};
 	}

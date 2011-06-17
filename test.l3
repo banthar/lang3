@@ -1,0 +1,9 @@
+
+function printf(format:*Char,...):Int;
+
+function main(argc:Int,argv:**Char):Int
+{
+	printf("%i\n",24);
+	return 0;
+}
+

@@ -253,6 +253,40 @@ bool parseVariableDeclaration(Stream* s, Node* out)
 
 }
 
+bool parseFunctionType(Stream* s, Node* out)
+{
+	
+	expect(s,"(");
+	while(true)
+	{
+		if(!childParse(s,out,parseVariableDeclaration))
+		{
+			
+			int start=s->offset;
+			
+			if(readString(s,"..."))
+			{
+				Node ellipsis={.type=ELLIPSIS};
+				makeString(s, start, s->offset-start, &ellipsis.source);
+				addChild(out,ellipsis);
+			}
+			
+			break;
+		}
+		
+		if(!readString(s,","))
+			break;
+			
+	}
+	expect(s,")");
+
+	expect(s,":");
+	childParse(s,out,parseType);
+		
+	return true;
+	
+}
+
 bool parseType(Stream* s, Node* out)
 {
 
@@ -269,18 +303,20 @@ bool parseType(Stream* s, Node* out)
 	else if(readString(s,"function"))
 	{
 		out->type=FUNCTION_TYPE;
-		expect(s,"(");
-		parseSeparated(s,out,parseVariableDeclaration,",");
-		expect(s,")");
-		expect(s,":");
-		childParse(s,out,parseType);
-
+		parseFunctionType(s,out);
 	}
 	else if(readString(s,"*"))
 	{
 		out->type=POINTER_TYPE;
 		childParse(s,out,parseType);
 	}
+	else if(readString(s,"["))
+	{
+		out->type=ARRAY_TYPE;
+		childParse(s,out,parseExpresion);
+		expect(s,"]");
+		childParse(s,out,parseType);
+	}	
 	else if(parseIdentifier(s,out))
 	{
 	}
@@ -331,11 +367,7 @@ bool parseDeclaration(Stream* s, Node* out)
 
 		Node type={.type=FUNCTION_TYPE};
 
-		expect(s,"(");
-		parseSeparated(s,&type,parseVariableDeclaration,",");
-		expect(s,")");
-		expect(s,":");
-		childParse(s,&type,parseType);
+		parseFunctionType(s,&type);
 
 		addChild(out,type);
 
