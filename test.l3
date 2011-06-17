@@ -1,8 +1,28 @@
 
 function printf(format:*Char,...):Int;
 
+type Point = struct
+{
+	x:Int;
+	y:Int;
+}
+
+type Vec2i = Point;
+
+function print(p:Vec2i):Int
+{
+	printf("%i %i\n",p.x,p.y);
+}
+
 function main(argc:Int,argv:**Char):Int
 {
+
+	var v:Vec2i;
+	v.x=0;
+	v.y=10;
+
+	print(v);
+
 	printf("%i\n",24);
 	return 0;
 }

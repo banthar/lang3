@@ -707,6 +707,13 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 			
 		case IDENTIFIER:
 			{
+				
+				if(strcmp(n->value,"Void")==0)
+				{
+					LLVMTypeRef voidType=LLVMVoidType();
+					printf("void: %p\n",voidType);
+					return voidType;
+				}
 
 				LLVMTypeRef llvm_type=LLVMGetTypeByName(ctx->module,n->value);
 
@@ -855,7 +862,16 @@ void llvmDefineFunction(Context* ctx, Node* n)
 
 	if(!ctx->terminated)
 	{
-		LLVMBuildUnreachable(ctx->builder);
+		
+		if(LLVMGetReturnType(LLVMGetReturnType(LLVMTypeOf(ctx->function)))==LLVMVoidType())
+		{
+			LLVMBuildRetVoid(ctx->builder);
+		}
+		else
+		{
+			panicNode(n,"no return in function returning non-void");
+			LLVMBuildUnreachable(ctx->builder);
+		}
 		ctx->terminated=true;
 	}
 
@@ -916,7 +932,7 @@ LLVMModuleRef compileModule(Module *m)
 	LLVMAddTypeName(ctx.module,"Bool",LLVMInt1Type());
 	LLVMAddTypeName(ctx.module,"Int",LLVMInt32Type());
 	LLVMAddTypeName(ctx.module,"Char",LLVMInt8Type());
-	LLVMAddTypeName(ctx.module,"Void",LLVMVoidType());
+	//LLVMAddTypeName(ctx.module,"Void",LLVMVoidType());
 
 	for(Node* n=m->child;n!=NULL;n=n->next)
 	{
