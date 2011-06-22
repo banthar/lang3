@@ -9,6 +9,8 @@
 #include "parser_utils.h"
 #include "error.h"
 
+#define or ?0:
+
 static bool isAlpha(int c)
 {
 	switch(c)

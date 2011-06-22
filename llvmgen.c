@@ -701,6 +701,8 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 				if(!LLVMIsConstant(elem_count))
 					panicNode(n,"Array size is not constant");
 				
+				printf(">>> %i\n",LLVMConstIntValue(elem_count));
+
 				return LLVMArrayType(llvmBuildType(ctx,getChild(n,1)),LLVMConstIntValue(elem_count));
 			}
 			break;
@@ -711,7 +713,6 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 				if(strcmp(n->value,"Void")==0)
 				{
 					LLVMTypeRef voidType=LLVMVoidType();
-					printf("void: %p\n",voidType);
 					return voidType;
 				}
 
@@ -931,6 +932,7 @@ LLVMModuleRef compileModule(Module *m)
 
 	LLVMAddTypeName(ctx.module,"Bool",LLVMInt1Type());
 	LLVMAddTypeName(ctx.module,"Int",LLVMInt32Type());
+	LLVMAddTypeName(ctx.module,"Int64",LLVMInt64Type());
 	LLVMAddTypeName(ctx.module,"Char",LLVMInt8Type());
 	//LLVMAddTypeName(ctx.module,"Void",LLVMVoidType());
 
@@ -1026,6 +1028,9 @@ int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"readInt"),(void*)&readInt);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"atoi"),(void*)&atoi);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"printf"),(void*)&printf);
+
+	//LLVMSetTarget(llvmModule, "x86_64-linux-gnu");
+	//LLVMSetDataLayout(llvmModule,"e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64");
 
 	int returnValue=LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),argc,argv,(const char*[]){NULL});
 					  

@@ -11,6 +11,8 @@
 #include "error.h"
 #include "parser_utils.h"
 
+#define or ?0:
+
 bool parseExpresion(Stream*s, Node* out);
 bool parseType(Stream* s, Node* out);
 bool parseDeclaration(Stream* s, Node* out);

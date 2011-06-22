@@ -1,3 +1,4 @@
 **~
 *.o
-lang
+lang3i
+*.bc
