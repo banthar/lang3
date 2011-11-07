@@ -1,0 +1,5 @@
+L3 is a simple C-like language, with some HaXe influences. Look at test.l3 for example syntax.
+
+Parsing is done with hand-written parser, code generation through llvm-c API.
+
+Basic things are already working, but the compiler is not in any usable state yet.
