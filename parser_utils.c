@@ -305,9 +305,46 @@ bool readCharConstant(Stream*s, String* out)
 
 char* unquoteString(const String* s)
 {
-	//TODO
+	//TODO: move to parser
 	
-	return strndup(s->stream->data+s->offset+1,s->length-2);
+	char* escaped=strndupa(s->stream->data+s->offset+1,s->length-2);
+	char* unescaped=malloc(s->length-2+1);
+
+	int j=0;
+
+	for(int i=0;i<strlen(escaped);i++)
+	{
+
+		switch(escaped[i])
+		{
+			case '\\':
+				switch(escaped[i+1])
+				{
+					case '\\':
+						unescaped[j]='\\';
+						j++;
+						i++;
+						break;
+					case 'n':
+						unescaped[j]='\n';
+						j++;
+						i++;
+						break;
+					default:
+						panicString(s,"\\ error");
+				}
+				break;
+			default:
+				unescaped[j]=escaped[i];
+				j++;
+				break;
+		}
+
+	}
+
+	unescaped[j]='\0';
+
+	return unescaped;
 }
 
 /* helpers */

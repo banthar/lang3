@@ -38,7 +38,7 @@ function main(argc:Int,argv:**Char):Int
 
 	if(argc!=3)
 	{
-		printf("wrong number of arguments%c",10);
+		printf("wrong number of arguments\n",10);
 		return 1;
 	}
 
@@ -47,7 +47,7 @@ function main(argc:Int,argv:**Char):Int
 	point.x=atoi(argv[1]);
 	point.y=atoi(argv[2]);
 
-    printf("length((%i, %i)) = %i%c",point.x, point.y, length(point),10);
+    printf("length((%i, %i)) = %i\n",point.x, point.y, length(point));
     return 0;
 }
 
