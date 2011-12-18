@@ -1,7 +1,7 @@
 
 CFLAGS+=-Wall -std=c99
 
-CFLAGS+=-O2
+CFLAGS+=-g
 
 HEADERS:=$(shell find -iname "*.h")
 OBJECTS:=ptree.o error.o lang.o llvmgen.o operators.o parser.o parser_utils.o stream.o 

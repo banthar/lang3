@@ -1,4 +1,6 @@
 
+/* stream.h */
+
 #ifndef __STREAM_H_
 #define __STREAM_H_
 

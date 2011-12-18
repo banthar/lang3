@@ -35,20 +35,10 @@ function length(point:Point):Int
 
 function main(argc:Int,argv:**Char):Int
 {
+	var p:*Int;
+	*p=1;
+	return *p;
 
-	if(argc!=3)
-	{
-		printf("wrong number of arguments\n",10);
-		return 1;
-	}
-
-	var point:Point;
-
-	point.x=atoi(argv[1]);
-	point.y=atoi(argv[2]);
-
-    printf("length((%i, %i)) = %i\n",point.x, point.y, length(point));
-    return 0;
 }
 
 

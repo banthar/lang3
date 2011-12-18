@@ -1,4 +1,6 @@
 
+/* operators.h */
+
 #ifndef __OPERATORS_H_
 #define __OPERATORS_H_
 
