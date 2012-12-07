@@ -1,20 +1,17 @@
 
-function printf(format:*Char,...):Int;
-function atoi(a:*Char):Int;
+function printf(format:*Byte,...):Int;
+function atoi(a:*Byte):Int;
 
-type Point = struct
-{
+struct Point = struct {
     x:Int;
     y:Int;
 }
 
-function sqrt(n:Int):Int
-{
+function sqrt(n:Int):Int {
 
 	var k:Int=n;
 
-	while(true)
-	{
+	while(true) {
 		var k1:Int=(k+n div k) div 2;
 
 		if(k1==k)
@@ -28,17 +25,14 @@ function sqrt(n:Int):Int
 
 }
 
-function length(point:Point):Int
-{
+function length(point:Point):Int {
 	return sqrt(point.x*point.x+point.y*point.y);
 }
 
-function main(argc:Int,argv:**Char):Int
-{
+function main(argc:Int,argv:**Byte):Int{
 	var p:*Int;
 	*p=1;
 	return *p;
-
 }
 
 

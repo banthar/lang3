@@ -462,11 +462,14 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 				}
 				
 			}
+		case OPERATOR_DEREF:
+			{
+				return arg(0);
+			}
 		default:
 			break;
 	}
-	
-	panicNode(n,"not a l-value");
+	panicNode(n,"is not a l-value");
 
 }
 
@@ -710,10 +713,14 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 		case IDENTIFIER:
 			{
 				
-				if(strcmp(n->value,"Void")==0)
-				{
-					LLVMTypeRef voidType=LLVMVoidType();
-					return voidType;
+				if(strcmp(n->value,"Void")==0) {
+					return LLVMVoidType();
+				} else if (strcmp(n->value,"Bool")==0) {
+					return LLVMInt1Type();
+				} else if (strcmp(n->value,"Byte")==0) {
+					return LLVMInt8Type();
+				} else if (strcmp(n->value,"Int")==0) {
+					return LLVMInt32Type();
 				}
 
 				LLVMTypeRef llvm_type=LLVMGetTypeByName(ctx->module,n->value);
@@ -764,37 +771,36 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 
 }
 
-void llvmDeclareType(Context* ctx, Node* n)
+void llvmDeclareStruct(Context* ctx, Node* n)
 {
 
-	if(n->type == TYPE_DECLARATION)
+	if(n->type == STRUCT_DECLARATION)
 	{
-
 		Type t={
 			.declaration=n,
-			.llvm_type=LLVMOpaqueType(),
+			.llvm_type=LLVMStructCreateNamed(LLVMGetModuleContext(ctx->module), getChild(n,0)->value),
 		};
 
-		LLVMAddTypeName(ctx->module,getChild(n,0)->value,t.llvm_type);
-
 		addType(ctx,t);
-
 	}
 
 }
 
-void llvmDefineType(Context* ctx, Node* n)
+void llvmDefineStruct(Context* ctx, Node* n)
 {
-	if(n->type == TYPE_DECLARATION)
+	if(n->type == STRUCT_DECLARATION)
 	{
 		Type* t=getType(ctx,getChild(n,0)->value);
 
 		assert(t!=NULL);
 
-		LLVMTypeRef concrete_type=llvmBuildType(ctx,getChild(n,1));
+		LLVMTypeRef struct_type=llvmBuildType(ctx,getChild(n,1));
 
-		LLVMRefineType(t->llvm_type, concrete_type);
-		t->llvm_type=concrete_type;
+		unsigned size = LLVMCountStructElementTypes(struct_type);
+		LLVMTypeRef elements[size];
+		LLVMGetStructElementTypes(struct_type, elements);
+
+		LLVMStructSetBody(t->llvm_type, elements, size, false);
 
 	}
 
@@ -930,29 +936,19 @@ LLVMModuleRef compileModule(Module *m)
 
 	ctx.module=LLVMModuleCreateWithName("");
 
-	LLVMAddTypeName(ctx.module,"Bool",LLVMInt1Type());
-	LLVMAddTypeName(ctx.module,"Int",LLVMInt32Type());
-	LLVMAddTypeName(ctx.module,"Int64",LLVMInt64Type());
-	LLVMAddTypeName(ctx.module,"Char",LLVMInt8Type());
-	//LLVMAddTypeName(ctx.module,"Void",LLVMVoidType());
-
-	for(Node* n=m->child;n!=NULL;n=n->next)
-	{
-		llvmDeclareType(&ctx,n);
+	for(Node* n=m->child;n!=NULL;n=n->next)	{
+		llvmDeclareStruct(&ctx,n);
 	}
 
-	for(Node* n=m->child;n!=NULL;n=n->next)
-	{
-		llvmDefineType(&ctx,n);
+	for(Node* n=m->child;n!=NULL;n=n->next) {
+		llvmDefineStruct(&ctx,n);
 	}
 
-	for(Node* n=m->child;n!=NULL;n=n->next)
-	{
+	for(Node* n=m->child;n!=NULL;n=n->next)	{
 		llvmDeclareVariable(&ctx,n);
 	}
 
-	for(Node* n=m->child;n!=NULL;n=n->next)
-	{
+	for(Node* n=m->child;n!=NULL;n=n->next)	{
 		llvmDefineVariable(&ctx,n);
 	}
 

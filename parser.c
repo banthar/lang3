@@ -338,10 +338,10 @@ bool parseDeclaration(Stream* s, Node* out)
 	readWhitespace(s);
 	int start=s->offset;
 
-	if(readString(s,"type"))
+	if(readString(s,"struct"))
 	{
 
-		out->type = TYPE_DECLARATION;
+		out->type = STRUCT_DECLARATION;
 		childParse(s,out,parseIdentifier);
 
 		expect(s,"=");
