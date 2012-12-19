@@ -1,5 +1,10 @@
 
+function abort():Void {
+
+}
+
 function printf(format:*Byte,...):Int;
+function panic(format:*Byte,...):Bool;
 function atoi(a:*Byte):Int;
 
 struct Point = struct {
@@ -30,9 +35,7 @@ function length(point:Point):Int {
 }
 
 function main(argc:Int,argv:**Byte):Int{
-	var p:*Int;
-	*p=1;
-	return *p;
+	var p:Point=Point(0,0);
 }
 
 

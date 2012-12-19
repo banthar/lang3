@@ -70,7 +70,7 @@ void assertNode(const Node* n, bool assertion, const char* format, ...)
 __attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...)
 {
 	assert(n!=NULL);
-	dumpNode(n);
+//	dumpNode(n);
 	
 	va_list args;
 	va_start(args,format);

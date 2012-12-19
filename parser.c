@@ -206,6 +206,12 @@ bool parseStatement(Stream* s, Node* out)
 		childParse(s,out,parseExpresion);
 
 	}
+	else if(readString(s,"assert"))
+	{
+		out->type=ASSERT_STATEMENT;
+		childParse(s,out,parseExpresion);
+
+	}
 	else if(readString(s,"break"))
 	{
 		out->type=BREAK_STATEMENT;

@@ -1,0 +1,19 @@
+
+function abort():Void;
+function printf(format:*Byte,...):Int;
+
+function f(n:Int):Int {
+	if( n < 0 ) {
+		return n;
+	} else {
+		return f(n-1);
+	}
+}
+
+function main(argc:Int,argv:**Byte):Int{
+	assert f(10) == -1;
+	assert false;
+	return 0;
+}
+
+

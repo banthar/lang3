@@ -365,6 +365,14 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 }
 
 
+static LLVMValueRef pointerToConstString(LLVMBuilderRef builder, const char* value) {
+		LLVMValueRef string=LLVMConstString(value, strlen(value),false);			
+		LLVMValueRef ptr=LLVMBuildAlloca(builder,LLVMTypeOf(string),"");
+		LLVMBuildStore(builder,string,ptr);
+		return LLVMBuildGEP(builder, ptr,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2,"");
+}
+
+
 LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 {
 
@@ -379,11 +387,7 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 			return LLVMConstInt(LLVMInt8Type(), n->value[0],false);
 		case STRING_CONSTANT:
 		{
-			LLVMValueRef string=LLVMConstString(n->value, strlen(n->value),false);			
-			LLVMValueRef ptr=LLVMBuildAlloca(ctx->builder,LLVMTypeOf(string),"");
-			LLVMBuildStore(ctx->builder,string,ptr);
-			return LLVMBuildGEP( ctx->builder, ptr,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2,"");
-
+			return pointerToConstString(ctx->builder, n->value);
 		}
 		case STRUCT_CONSTANT:
 		{
@@ -551,6 +555,37 @@ void llvmBuildStatement(Context* ctx, Node* n)
 
 				ctx->terminated=true;
 
+
+			}
+			break;
+		case ASSERT_STATEMENT:
+			{
+
+				Node* value = getChild(n,0);
+
+				LLVMValueRef condition=llvmBuildExpresion(ctx,value);
+
+				LLVMBasicBlockRef failed=LLVMAppendBasicBlock(ctx->function,"assertion_failed");
+				LLVMBasicBlockRef passed=LLVMAppendBasicBlock(ctx->function,"assertion_passed");
+
+				LLVMBuildCondBr(ctx->builder, condition,passed,failed);
+
+				LLVMPositionBuilderAtEnd(ctx->builder, failed);
+				
+				const char* filename = value->source.stream->filename;
+				const char* fmt = "assertion failed: %s";
+				const char* msg = cstrString(&value->source);
+
+				LLVMValueRef abortFunction = LLVMGetNamedFunction(ctx->module,"panic");
+				LLVMBuildCall(ctx->builder, abortFunction , (LLVMValueRef[]){
+					pointerToConstString(ctx->builder, filename),
+					LLVMConstInt(LLVMInt32Type(), 0, false),
+					pointerToConstString(ctx->builder, fmt),
+					pointerToConstString(ctx->builder, msg),
+				}, 4, "");
+				LLVMBuildUnreachable(ctx->builder);
+
+				LLVMPositionBuilderAtEnd(ctx->builder, passed);
 
 			}
 			break;
@@ -876,7 +911,7 @@ void llvmDefineFunction(Context* ctx, Node* n)
 		}
 		else
 		{
-			panicNode(n,"no return in function returning non-void");
+//			panicNode(n,"no return in function returning non-void");
 			LLVMBuildUnreachable(ctx->builder);
 		}
 		ctx->terminated=true;
@@ -971,9 +1006,9 @@ LLVMModuleRef compileModule(Module *m)
 	//LLVMAddSimplifyLibCallsPass(manager);
 	//LLVMAddInstructionCombiningPass(manager);
 
-	//addOptimizations(manager);
-	//addOptimizations(manager);
-	//addOptimizations(manager);
+	addOptimizations(manager);
+	addOptimizations(manager);
+	addOptimizations(manager);
 
 	LLVMRunPassManager(manager,ctx.module);
 	LLVMDisposePassManager(manager);
@@ -1024,6 +1059,7 @@ int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"readInt"),(void*)&readInt);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"atoi"),(void*)&atoi);
 	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"printf"),(void*)&printf);
+	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"panic"),(void*)&panic);
 
 	//LLVMSetTarget(llvmModule, "x86_64-linux-gnu");
 	//LLVMSetDataLayout(llvmModule,"e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64");

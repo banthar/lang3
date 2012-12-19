@@ -1,0 +1,9 @@
+
+function panic(file:*Byte, line:Int, format:*Byte, ...):Void;
+
+function main(argc:Int,argv:**Byte):Int{
+	assert false;
+	return 0;
+}
+
+
