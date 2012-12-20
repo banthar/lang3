@@ -993,6 +993,13 @@ LLVMModuleRef compileModule(Module *m)
 
 	ctx.module=LLVMModuleCreateWithName("");
 
+	LLVMAddFunction(ctx.module,"panic",LLVMFunctionType(LLVMVoidType(), (LLVMTypeRef[]){
+		LLVMPointerType(LLVMInt8Type(),0),
+		LLVMInt32Type(),
+		LLVMPointerType(LLVMInt8Type(),0),
+	},3,true));
+
+
 	for(Node* n=m->child;n!=NULL;n=n->next)	{
 		llvmDeclareStruct(&ctx,n);
 	}
@@ -1059,6 +1066,7 @@ int readInt()
 	scanf("%d",&i);
 	return i;
 }
+
 
 int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 {

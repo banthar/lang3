@@ -1,7 +1,4 @@
 
-function printf(format:*Byte,...):Int;
-function panic(file:*Byte, line:Int, format:*Byte, ...):Void;
-
 function recursive(a:Int,b:Int):Int {
 	if( b == 0 ) {
 		return a;
@@ -11,22 +8,23 @@ function recursive(a:Int,b:Int):Int {
 }
 
 function simple():Int {
-	return 0;
+	return 78;
 }
 
-var n:Int=0;
+var n:Int=42;
 
 function incrementN():Void {
-	n=1;
+	n=n+1;
 }
-
 
 function main(argc:Int,argv:**Byte):Int{
 	assert recursive(0,10) == 10;
-	//assert simple() == 0;
-	//assert n==0;
-	//incrementN();
-	//assert n==1;
+	assert simple() == 78;
+	assert n==42;
+	incrementN();
+	assert n==43;
+	incrementN();
+	assert n==44;
 	return 0;
 }
 

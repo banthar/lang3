@@ -1,6 +1,4 @@
 
-function panic(file:*Byte, line:Int, format:*Byte, ...):Void;
-
 var n:Int=0;
 
 function f(n:Int):Int {
