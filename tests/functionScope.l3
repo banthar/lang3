@@ -1,8 +1,14 @@
 
 function panic(file:*Byte, line:Int, format:*Byte, ...):Void;
 
+var n:Int=0;
+
+function f(n:Int):Int {
+	return n;
+}
+
 function main(argc:Int,argv:**Byte):Int{
-	assert true;
+	assert f(1) == 1;
 	return 0;
 }
 

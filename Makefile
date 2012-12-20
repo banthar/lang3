@@ -29,6 +29,11 @@ run: lang3i
 debug: lang3i
 	gdb ./lang3i --eval-command="run test.l3 3 4"
 
+test: lang3i
+	$(foreach test,$(shell ls tests/*.l3),./lang3i --run  $(test);)
+#	./lang3i --run "tests/assert.l3"
+	
+
 clean:
 	rm $(OBJECTS)
 

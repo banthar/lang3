@@ -1,18 +1,32 @@
 
-function abort():Void;
 function printf(format:*Byte,...):Int;
+function panic(file:*Byte, line:Int, format:*Byte, ...):Void;
 
-function f(n:Int):Int {
-	if( n < 0 ) {
-		return n;
+function recursive(a:Int,b:Int):Int {
+	if( b == 0 ) {
+		return a;
 	} else {
-		return f(n-1);
+		return recursive(a+1,b-1);
 	}
 }
 
+function simple():Int {
+	return 0;
+}
+
+var n:Int=0;
+
+function incrementN():Void {
+	n=1;
+}
+
+
 function main(argc:Int,argv:**Byte):Int{
-	assert f(10) == -1;
-	assert false;
+	assert recursive(0,10) == 10;
+	//assert simple() == 0;
+	//assert n==0;
+	//incrementN();
+	//assert n==1;
 	return 0;
 }
 

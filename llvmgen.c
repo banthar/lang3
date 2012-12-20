@@ -125,8 +125,11 @@ static Context* popContext(Context *ctx)
 static void addVariable(Context *ctx, Variable variable)
 {
 
-    if((ctx->variable==NULL) != (ctx->variables==0))
-        panic("illegal state",0);
+    assert((ctx->variable==NULL) == (ctx->variables==0))
+
+    if(getVariable(ctx,getChild(variable.declaration,0)->value)!=NULL) {
+        panicNode(variable.declaration,"duplicated name");
+	}
 
     ctx->variables++;
 
@@ -162,7 +165,9 @@ static void addType(Context *ctx, Type type)
 static Variable* getVariable(const Context* ctx, const char* name)
 {
 
-	if(ctx==NULL || name==NULL)
+    assert(name != NULL);
+
+	if(ctx==NULL)
 		return NULL;
 
 	for(int i=0;i<ctx->variables;i++)
@@ -174,7 +179,20 @@ static Variable* getVariable(const Context* ctx, const char* name)
 			return &ctx->variable[i];
 	}
 
-	return getVariable(ctx->parent,name);
+	return NULL;
+}
+
+static Variable* resolveVariable(const Context* ctx, const char* name)
+{
+	while(ctx!=NULL) {
+		Variable* v=getVariable(ctx,name);
+		if(v!=NULL){
+			return v;
+		} else {
+			ctx=ctx->parent;
+		}
+    }
+	return NULL;
 }
 
 static Type* getType(const Context* ctx, const char* name)
@@ -487,7 +505,7 @@ LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n)
 			if(ctx->builder==NULL)
 				panicNode(n,"expresion has to be constant");
 
-			Variable* v=getVariable(ctx, n->value);
+			Variable* v=resolveVariable(ctx, n->value);
 
 			if(v==NULL)
 				panicNode(n,"'%s' undeclared",n->value);
@@ -873,6 +891,9 @@ void llvmDefineFunction(Context* ctx, Node* n)
 	assert(n->type==FUNCTION_DECLARATION);
 	Variable function=*getVariable(ctx, getChild(n,0)->value);
 
+    Context functionCtx = pushContext(ctx);
+    ctx = &functionCtx;
+
 	ctx->function=function.llvm_value;
 
 	LLVMBasicBlockRef bblock=LLVMAppendBasicBlock(function.llvm_value, "entry");
@@ -917,6 +938,7 @@ void llvmDefineFunction(Context* ctx, Node* n)
 		ctx->terminated=true;
 	}
 
+    ctx = popContext(ctx);
 
 }
 
