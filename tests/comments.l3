@@ -1,0 +1,9 @@
+
+function main(argc:Int,argv:**Byte):Int{
+	var n:Int=0;
+#
+n=1;
+#n=0
+	assert n==1;
+	return 0;
+}

@@ -121,7 +121,7 @@ static bool readComment(Stream* s, String* out)
 	}
 	else if(isString(s,"#"))
 	{
-		seekStream(s,2);
+		seekStream(s,1);
 
 		while(!isString(s,"\n") && !isEof(s))
 		{
