@@ -6,7 +6,7 @@ CFLAGS+=-g
 HEADERS:=$(shell find -iname "*.h")
 OBJECTS:=ptree.o error.o lang.o llvmgen.o operators.o parser.o parser_utils.o stream.o 
 
-LLVM_CONFIG:=llvm-config-3.1
+LLVM_CONFIG:=llvm-config-3.0
 CFLAGS+=`$(LLVM_CONFIG) --cflags`
 CXXFLAGS+=`$(LLVM_CONFIG) --cxxflags`
 LIBS+=`$(LLVM_CONFIG) --libs --ldflags` -lstdc++ -lpthread -lm -ldl
