@@ -83,9 +83,7 @@ bool parseSimpleExpresion(Stream* s, Node* out)
 	}
 	else if(readString(s,"{"))
 	{
-		
 		out->type=STRUCT_CONSTANT;
-		
 		while(readString(s,"}")==false)
 		{
 			if(childParse(s,out,parseExpresion)==false)
@@ -100,7 +98,6 @@ bool parseSimpleExpresion(Stream* s, Node* out)
 				break;
 			}
 		}
-
 	}
 	else if(readStringConstant(s,&out->source))
 	{

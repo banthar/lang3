@@ -68,7 +68,6 @@ struct Context
 	bool terminated;
 	LLVMBasicBlockRef breakBlock;
 	LLVMBasicBlockRef continueBlock;
-
 };
 
 static Context pushContext(Context *ctx);
@@ -81,8 +80,8 @@ void llvmBuildStatement(Context* ctx, Node* n);
 void llvmBuildFunction(Context* ctx, Node* f);
 LLVMTypeRef llvmBuildType(Context* ctx, Node* n);
 void llvmGenHeader(Context* ctx, Node* n);
-LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n);
-LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n);
+LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n, LLVMTypeRef expectedType);
+LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n, LLVMTypeRef expectedType);
 
 static Context pushContext(Context *ctx)
 {
@@ -272,7 +271,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	{
 		assert(getChildrenCount(n)>index);
 
-		return llvmBuildExpresion(ctx,getChild(n,index));
+		return llvmBuildExpresion(ctx,getChild(n,index),NULL);
 
 	}
 
@@ -280,7 +279,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 	{
 		assert(getChildrenCount(n)>index);
 
-		return llvmBuildLExpresion(ctx,getChild(n,index));
+		return llvmBuildLExpresion(ctx,getChild(n,index),NULL);
 
 	}
 
@@ -390,10 +389,29 @@ static LLVMValueRef pointerToConstString(LLVMBuilderRef builder, const char* val
 		return LLVMBuildGEP(builder, ptr,(LLVMValueRef[]){LLVMConstNull(LLVMInt32Type()),LLVMConstNull(LLVMInt32Type())}, 2,"");
 }
 
+LLVMValueRef llvmBuildStructConstant(Context* ctx, Node* n, LLVMTypeRef expectedType) {
 
-LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
-{
+    if(expectedType==NULL){
+        panicNode(n,"Unable to initialize unknown struct");
+    }
 
+    if(LLVMGetTypeKind(expectedType) != LLVMStructTypeKind){
+        panicNode(n,"Unable to initialize non-struct type");
+    }
+
+
+    int vals=getChildrenCount(n);
+	LLVMValueRef val[vals];
+
+	for(int i=0;i<vals;i++){
+		val[i]=llvmBuildExpresion(ctx,getChild(n,i),NULL);
+	}
+
+    return LLVMConstNamedStruct(expectedType, val, vals);
+
+}
+
+LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n, LLVMTypeRef expectedType) {
 
 	switch(n->type)
 	{
@@ -409,7 +427,7 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 		}
 		case STRUCT_CONSTANT:
 		{
-			panicNode(n,"TODO");
+			return llvmBuildStructConstant(ctx,n,expectedType);
 		}
 		case NULL_CONSTANT:
 			return LLVMConstNull(LLVMPointerType(LLVMVoidType(),0));
@@ -418,7 +436,7 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 		case FALSE_CONSTANT:
 			return LLVMConstInt(LLVMInt1Type(),0,false);
 		case IDENTIFIER:
-			return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n),n->value);
+			return LLVMBuildLoad(ctx->builder,llvmBuildLExpresion(ctx,n,NULL),n->value);
 		case OPERATION:
 			return llvmBuildOperation(ctx,n);
 		default:
@@ -429,14 +447,13 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n)
 
 /* L-Expression */
 
-LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
-{
+LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n) {
 
 	LLVMValueRef arg(int index)
 	{
 		assert(getChildrenCount(n)>index);
 
-		return llvmBuildExpresion(ctx,getChild(n,index));
+		return llvmBuildExpresion(ctx,getChild(n,index),NULL);
 
 	}
 
@@ -444,7 +461,7 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 	{
 		assert(getChildrenCount(n)>index);
 
-		return llvmBuildLExpresion(ctx,getChild(n,index));
+		return llvmBuildLExpresion(ctx,getChild(n,index),NULL);
 
 	}
 
@@ -495,7 +512,7 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n)
 
 }
 
-LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n)
+LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n, LLVMTypeRef expectedType)
 {
 	switch(n->type)
 	{
@@ -532,7 +549,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 	{
 
 		case OPERATION:
-			llvmBuildExpresion(ctx,n);
+			llvmBuildExpresion(ctx,n,NULL);
 			break;
 		case VARIABLE_DECLARATION:
 			{
@@ -540,10 +557,11 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				Variable v;
 
 				v.declaration=n;
-				v.llvm_value=LLVMBuildAlloca(ctx->builder, llvmBuildType(ctx,getChild(n,1)), getChild(n,0)->value );
+                LLVMTypeRef type = llvmBuildType(ctx,getChild(n,1));
+				v.llvm_value=LLVMBuildAlloca(ctx->builder, type, getChild(n,0)->value );
 
 				if(getChildrenCount(n)>2)
-					LLVMBuildStore(ctx->builder,llvmBuildExpresion(ctx,getChild(n,2)),v.llvm_value);
+					LLVMBuildStore(ctx->builder,llvmBuildExpresion(ctx,getChild(n,2),type),v.llvm_value);
 
 				addVariable(ctx,v);
 
@@ -569,11 +587,9 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				if(getChildrenCount(n)==0)
 					LLVMBuildRetVoid(ctx->builder);
 				else
-					LLVMBuildRet(ctx->builder,llvmBuildExpresion(ctx,getChild(n,0)));
+					LLVMBuildRet(ctx->builder,llvmBuildExpresion(ctx,getChild(n,0),NULL));
 
 				ctx->terminated=true;
-
-
 			}
 			break;
 		case ASSERT_STATEMENT:
@@ -581,7 +597,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 
 				Node* value = getChild(n,0);
 
-				LLVMValueRef condition=llvmBuildExpresion(ctx,value);
+				LLVMValueRef condition=llvmBuildExpresion(ctx,value,NULL);
 
 				LLVMBasicBlockRef failed=LLVMAppendBasicBlock(ctx->function,"assertion_failed");
 				LLVMBasicBlockRef passed=LLVMAppendBasicBlock(ctx->function,"assertion_passed");
@@ -619,7 +635,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				LLVMBuildBr(loop_ctx.builder, loop_ctx.continueBlock);
 				
 				LLVMPositionBuilderAtEnd(loop_ctx.builder, loop_ctx.continueBlock);
-				LLVMValueRef condition=llvmBuildExpresion(&loop_ctx,getChild(n,0));
+				LLVMValueRef condition=llvmBuildExpresion(&loop_ctx,getChild(n,0),NULL);
 				LLVMBuildCondBr(loop_ctx.builder, condition,bodyBlock,loop_ctx.breakBlock);
 
 				LLVMPositionBuilderAtEnd(loop_ctx.builder, bodyBlock);
@@ -648,7 +664,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 				LLVMBuildBr(loop_ctx.builder, beginBlock);
 				
 				LLVMPositionBuilderAtEnd(loop_ctx.builder, beginBlock);
-				LLVMValueRef condition=llvmBuildExpresion(&loop_ctx,getChild(n,1));
+				LLVMValueRef condition=llvmBuildExpresion(&loop_ctx,getChild(n,1),NULL);
 				LLVMBuildCondBr(loop_ctx.builder, condition,bodyBlock,loop_ctx.breakBlock);
 
 				LLVMPositionBuilderAtEnd(loop_ctx.builder, bodyBlock);
@@ -685,7 +701,7 @@ void llvmBuildStatement(Context* ctx, Node* n)
 			break;
 		case IF_STATEMENT:
 			{
-				LLVMValueRef condition=llvmBuildExpresion(ctx,getChild(n,0));
+				LLVMValueRef condition=llvmBuildExpresion(ctx,getChild(n,0),NULL);
 
 				LLVMBasicBlockRef thenBlock=LLVMAppendBasicBlock(ctx->function,"then");
 				LLVMBasicBlockRef elseBlock=LLVMAppendBasicBlock(ctx->function,"else");
@@ -752,7 +768,7 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 				if(getChildrenCount(n)!=2)
 					panicNode(n,"Array type needs two arguments");
 					
-				LLVMValueRef elem_count=llvmBuildExpresion(ctx,getChild(n,0));
+				LLVMValueRef elem_count=llvmBuildExpresion(ctx,getChild(n,0),NULL);
 				
 				if(!LLVMIsConstant(elem_count))
 					panicNode(n,"Array size is not constant");
@@ -900,7 +916,6 @@ void llvmDefineFunction(Context* ctx, Node* n)
 	ctx->builder=LLVMCreateBuilder();
 	LLVMPositionBuilderAtEnd(ctx->builder, bblock);
 
-
 	Node* type=getChild(n,1);
 
 	for(int i=0;i<getChildrenCount(type)-1;i++)
@@ -950,7 +965,7 @@ void llvmDefineVariable(Context* ctx, Node* n)
 
 		Variable* v=getVariable(ctx, getChild(n,0)->value);
 
-		LLVMSetInitializer(v->llvm_value,llvmBuildExpresion(ctx,getChild(n,2)));
+		LLVMSetInitializer(v->llvm_value,llvmBuildExpresion(ctx,getChild(n,2),NULL));
 
 	}
 	else if(n->type == FUNCTION_DECLARATION && getChildrenCount(n)==3)

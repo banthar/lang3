@@ -4,12 +4,33 @@ struct Point = struct {
     y:Int;
 }
 
-function main(argc:Int,argv:**Byte):Int{
+function setAndGet():Void {
 	var p:Point;
 	p.x=0;
 	p.y=1;
 	assert p.x==0;
 	assert p.y==1;
+}
+
+function initializer():Void {
+    var a:Point;
+    a.x=0;
+    a.y=1;
+	var b:Point=a;
+	assert b.x==a.x;
+	assert b.y==a.y;
+}
+
+function structInitializer():Void {
+	var p:Point={0, 1};
+	assert p.x==0;
+	assert p.y==1;
+}
+
+function main(argc:Int,argv:**Byte):Int{
+	setAndGet();
+    structInitializer();
+	initializer();
 	return 0;
 }
 
