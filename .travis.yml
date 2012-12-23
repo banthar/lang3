@@ -1,4 +1,4 @@
 language: c
-install: sudo apt-get install llvm-3.1-dev
+install: sudo apt-get install llvm-dev
 script: make test
 
