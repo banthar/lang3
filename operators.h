@@ -4,7 +4,7 @@
 #ifndef __OPERATORS_H_
 #define __OPERATORS_H_
 
-#include "bool.h"
+#include <stdbool.h>
 
 typedef enum
 {

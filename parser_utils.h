@@ -4,7 +4,8 @@
 #ifndef __PARSER_UTILS_H_
 #define __PARSER_UTILS_H_
 
-#include "bool.h"
+#include <stdbool.h>
+
 #include "stream.h"
 #include "ptree.h"
 #include "operators.h"

@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <setjmp.h>
+#include <stdbool.h>
 
-#include "bool.h"
 #include "stream.h"
 #include "parser.h"
 #include "error.h"

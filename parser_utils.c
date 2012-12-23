@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <stdbool.h>
 
-#include "bool.h"
 #include "stream.h"
 #include "parser_utils.h"
 #include "error.h"
