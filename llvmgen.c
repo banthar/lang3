@@ -986,7 +986,7 @@ void addOptimizations(LLVMPassManagerRef pm)
 	LLVMAddVerifierPass(pm);
 }
 
-LLVMModuleRef compileModule(Module *m)
+LLVMModuleRef compileModule(Node *m)
 {
 
 	Context ctx={0};

@@ -21,22 +21,20 @@ typedef struct
 int run(Config config, int argc, const char* argv[])
 {
 	Stream* s=openStream(argv[0]);
-	Module* m=parseModule(s);
-
-	if(m==NULL)
-	{
+	Node m;
+	if(!parseModule(s,&m)) {
 		closeStream(s);
 		return -1;
 	}
 	
 	if(config.dumpPT)
 	{
-		dumpNode(m);
+		dumpNode(&m);
 	}
 		
-	LLVMModuleRef llvmModule=compileModule(m);
+	LLVMModuleRef llvmModule=compileModule(&m);
 	closeStream(s);
-	freeModule(m);
+	freeNode(&m);
 
 	if(config.dumpLLVM)
 	{

@@ -221,10 +221,5 @@ void freeNode(Node* n)
 
 }
 
-void freeModule(Module* m)
-{
-	freeNode(m);
-	free(m);
-}
 
 

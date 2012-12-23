@@ -392,18 +392,17 @@ bool parseDeclaration(Stream* s, Node* out)
 
 }
 
-Module* parseModule(Stream* s)
+bool parseModule(Stream* s, Node* m)
 {
 
-	Node *m=malloc(sizeof(Node));
 	*m=(Node){0};
 
 	jmp_buf env;
 
 	if(setjmp(env))
 	{
-		freeModule(m);
-		return NULL;
+		freeNode(m);
+		return false;
 	}
 
 	__attribute__((noreturn)) void errorHandler()
@@ -425,9 +424,7 @@ Module* parseModule(Stream* s)
 
 	s->errorHandler=abort;
 
-	return m;
-
+	return true;
 
 }
-
 

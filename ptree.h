@@ -55,8 +55,6 @@ struct Node
 	Node* next;
 };
 
-typedef Node Module;
-
 __attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...);
 void assertNode(const Node* n, bool assertion, const char* format, ...);
 void freeNode(Node* n);
@@ -64,7 +62,6 @@ void addChild(Node* parent, const Node children);
 Node* getChild(const Node* parent, const int index);
 int getChildrenCount(const Node* parent);
 void dumpNode(const Node* n);
-void freeModule(Module *m);
 
 #endif
 

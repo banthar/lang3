@@ -9,7 +9,7 @@
 #include "stream.h"
 #include "ptree.h"
 
-Module* parseModule(Stream* s);
+bool parseModule(Stream* s, Node* out);
 
 #endif
 
