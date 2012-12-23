@@ -1,0 +1,16 @@
+
+struct Point = struct {
+    x:Int;
+    y:Int;
+}
+
+function main(argc:Int,argv:**Byte):Int{
+	var p:Point;
+	p.x=0;
+	p.y=1;
+	assert p.x==0;
+	assert p.y==1;
+	return 0;
+}
+
+

@@ -1,0 +1,28 @@
+
+function loadAndSave():Void {
+	var n:Int = 0;
+	assert n==0;
+	n=10;
+	assert n==10;
+	n++;
+	assert n==11;
+}
+
+function scope():Void {
+	{
+		var n:Int = 10;
+		assert n==10;
+	}
+	{
+		var n:Int = 11;
+		assert n==11;
+	}
+}
+
+function main(argc:Int,argv:**Byte):Int{
+	loadAndSave();
+	scope();
+	return 0;
+}
+
+
