@@ -17,6 +17,13 @@ function incrementN():Void {
 	n=n+1;
 }
 
+function returnVoid():Void {
+    if(1<2) {
+        return;
+    }
+	n=n+1;
+}
+
 function main(argc:Int,argv:**Byte):Int{
 	assert recursive(0,10) == 10;
 	assert simple() == 78;
@@ -24,6 +31,8 @@ function main(argc:Int,argv:**Byte):Int{
 	incrementN();
 	assert n==43;
 	incrementN();
+	assert n==44;
+    returnVoid();
 	assert n==44;
 	return 0;
 }

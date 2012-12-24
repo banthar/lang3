@@ -1,0 +1,38 @@
+
+function forLoop():Void {
+    var n:Int=0;
+    for(var i:Int=0;i<10;i++) {
+        n++;
+    }
+    assert n==10;
+}
+
+function forContinue():Void {
+    var n:Int=0;
+    for(var i:Int=0;i<10;i++) {
+        if(i==5) {
+            continue;
+        }
+        n++;
+    }
+    assert n==9;
+}
+
+function forBreak():Void {
+    var n:Int=0;
+    for(var i:Int=0;i<10;i++) {
+        n++;
+        if(i==5){
+            break;
+        }
+    }
+    assert n==6;
+}
+
+function main(argc:Int,argv:**Byte):Int {
+    forLoop();
+    forContinue();
+   	forBreak();
+	return 0;
+}
+
