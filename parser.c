@@ -292,6 +292,14 @@ bool parseFunctionType(Stream* s, Node* out)
 	
 }
 
+static bool parseStructBody(Stream* s, Node* out) {
+	out->type=STRUCT_TYPE;
+	expect(s,"{");
+	parseTerminated(s,out,parseVariableDeclaration,";");
+	expect(s,"}");
+	return true;
+}
+
 bool parseType(Stream* s, Node* out)
 {
 
@@ -300,10 +308,7 @@ bool parseType(Stream* s, Node* out)
 
 	if(readString(s,"struct"))
 	{
-		out->type=STRUCT_TYPE;
-		expect(s,"{");
-		parseTerminated(s,out,parseVariableDeclaration,";");
-		expect(s,"}");
+		parseStructBody(s,out);
 	}
 	else if(readString(s,"function"))
 	{
@@ -343,18 +348,12 @@ bool parseDeclaration(Stream* s, Node* out)
 
 	if(readString(s,"struct"))
 	{
-
 		out->type = STRUCT_DECLARATION;
 		childParse(s,out,parseIdentifier);
-
-		expect(s,"=");
-
-		childParse(s,out,parseType);
-
+		childParse(s,out,parseStructBody);
 	}
 	else if(readString(s,"var"))
 	{
-
 		out->type = VARIABLE_DECLARATION;
 		parseVariableDeclaration(s,out);
 
