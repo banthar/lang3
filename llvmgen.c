@@ -1082,16 +1082,23 @@ int readInt()
 	return i;
 }
 
+static void defineFunction(LLVMExecutionEngineRef engine, LLVMModuleRef module, const char* name, void* implementation) {
+	void* function = LLVMGetNamedFunction(module, name);
+	if(function != NULL) {
+		LLVMAddGlobalMapping(engine, function, implementation);
+	}
+}
 
 int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 {
 	
-	LLVMLinkInJIT();
+	LLVMLinkInMCJIT();
 	LLVMInitializeNativeTarget();
-	
+	LLVMInitializeNativeAsmPrinter();
+
 	char *err;
 	LLVMExecutionEngineRef engine;
-	bool ret=LLVMCreateJITCompilerForModule(&engine, llvmModule,3,&err);
+	bool ret=LLVMCreateMCJITCompilerForModule(&engine, llvmModule, NULL, 0, &err);
 	
 	if(ret)
 	{
@@ -1099,15 +1106,11 @@ int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 		return -1;
 	}
 
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"writeInt"),(void*)&writeInt);
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"writeString"),(void*)&writeString);
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"readInt"),(void*)&readInt);
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"atoi"),(void*)&atoi);
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"printf"),(void*)&printf);
-	LLVMAddGlobalMapping(engine,LLVMGetNamedFunction(llvmModule,"panic"),(void*)&panic);
-
-	//LLVMSetTarget(llvmModule, "x86_64-linux-gnu");
-	//LLVMSetDataLayout(llvmModule,"e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64");
+	defineFunction(engine, llvmModule, "writeInt", &writeInt);
+	defineFunction(engine, llvmModule, "readInt", &readInt);
+	defineFunction(engine, llvmModule, "atoi", &atoi);
+	defineFunction(engine, llvmModule, "printf", &printf);
+	defineFunction(engine, llvmModule, "panic", &panic);
 
 	int returnValue=LLVMRunFunctionAsMain(engine, LLVMGetNamedFunction(llvmModule,"main"),argc,argv,(const char*[]){NULL});
 					  
@@ -1115,6 +1118,5 @@ int runModule(LLVMModuleRef llvmModule, int argc, const char*argv[])
 	
 	
 	return returnValue;
-	
 }
 

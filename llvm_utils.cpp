@@ -4,8 +4,8 @@
 
 #include "llvm_utils.h"
 
-#include "llvm-c/Core.h"
-
+#include <llvm-c/Core.h>
+#include <llvm/IR/Constants.h>
 
 extern "C" unsigned LLVMConstIntValue(LLVMValueRef v)
 {
