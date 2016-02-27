@@ -1,6 +1,3 @@
-
-/* llvmgen.h */
-
 #ifndef __LLVMGEN_H_
 #define __LLVMGEN_H_
 

@@ -64,12 +64,9 @@ static bool isString(Stream* s, const char* string)
 	return true;
 }
 
-/* whitespace parsers */
-
 static bool readComment(Stream* s, String* out)
 {
-
-	assert(out==NULL);//TODO
+	assert(out==NULL);
 
 	if(isString(s,"/*"))
 	{
@@ -202,9 +199,6 @@ void expect(Stream* s, const char* pattern)
 
 }
 
-/* basic parsers */
-
-
 bool readIdentifier(Stream* s, String* out)
 {
 
@@ -305,8 +299,6 @@ bool readCharConstant(Stream*s, String* out)
 
 char* unquoteString(const String* s)
 {
-	//TODO: move to parser
-	
 	char* escaped=strndupa(s->stream->data+s->offset+1,s->length-2);
 	char* unescaped=malloc(s->length-2+1);
 
@@ -346,8 +338,6 @@ char* unquoteString(const String* s)
 
 	return unescaped;
 }
-
-/* helpers */
 
 bool childParse(Stream* s, Node* parent, bool (*parser)(Stream* s, Node* out))
 {

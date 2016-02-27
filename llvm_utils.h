@@ -1,6 +1,3 @@
-
-/* llvm_utils.h */
-
 #pragma once
 
 #include <llvm-c/Core.h>

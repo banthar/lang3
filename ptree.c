@@ -70,8 +70,6 @@ void assertNode(const Node* n, bool assertion, const char* format, ...)
 __attribute__((noreturn)) void panicNode(const Node* n, const char* format, ...)
 {
 	assert(n!=NULL);
-//	dumpNode(n);
-	
 	va_list args;
 	va_start(args,format);
 	vpanicString(&n->source, format, args);	
@@ -93,8 +91,6 @@ void dumpNode(const Node* n)
 		else
 			fprintf(stderr,"%s(%s) \"",nodeTypeNames[n->type],n->value==NULL?"":n->value);
 			
-		//printString(stderr, &n->source);
-
 		int c=' ';
 
 		for(int i=n->source.offset;i<n->source.offset+n->source.length;i++)

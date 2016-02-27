@@ -406,8 +406,6 @@ bool parseModule(Stream* s, Node* m)
 		longjmp(env,true);
 	}
 
-	//s->errorHandler=errorHandler;
-
 	readWhitespace(s);
 	int start=s->offset;
 

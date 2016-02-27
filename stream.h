@@ -1,6 +1,3 @@
-
-/* stream.h */
-
 #ifndef __STREAM_H_
 #define __STREAM_H_
 
@@ -26,9 +23,6 @@ typedef struct
 	Stream* stream;
 }String;
 
-
-/* char* cstr(const String s); */
-//#define cstr(s) ((s).length>0?(strndupa((s).stream->data+(s).offset,(s).length)):"")
 bool compareString(const String* a, const String* b);
 char* copyString(const String* s, char* buf, int len);
 char* strdupString(const String* s);

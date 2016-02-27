@@ -1,6 +1,3 @@
-
-/* parser_utils.h */
-
 #ifndef __PARSER_UTILS_H_
 #define __PARSER_UTILS_H_
 

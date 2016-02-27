@@ -248,8 +248,6 @@ int llvmGetFieldId(Context* ctx, Node* n, LLVMTypeRef llvmType)
 
 }
 
-/* Expression */
-
 LLVMValueRef llvmBuildIncrement(Context* ctx, LLVMValueRef value)
 {
 	LLVMTypeRef type=LLVMTypeOf(value);
@@ -445,8 +443,6 @@ LLVMValueRef llvmBuildExpresion(Context* ctx, Node* n, LLVMTypeRef expectedType)
 
 }
 
-/* L-Expression */
-
 LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n) {
 
 	LLVMValueRef arg(int index)
@@ -480,9 +476,6 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n) {
 				assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
 
 				int field_id=llvmGetFieldId(ctx, getChild(n,1),struct_type);
-
-				//TODO
-				//printf("type: %p",t);
 
 				return LLVMBuildStructGEP(ctx->builder, left,field_id,"");
 			}
@@ -536,8 +529,6 @@ LLVMValueRef llvmBuildLExpresion(Context* ctx, Node* n, LLVMTypeRef expectedType
 			panicNode(n,"not an L-expresion");
 	}
 }
-
-/* Statement */
 
 void llvmBuildStatement(Context* ctx, Node* n)
 {
@@ -736,8 +727,6 @@ void llvmBuildStatement(Context* ctx, Node* n)
 			}
 	}
 }
-
-/* Type */
 
 LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 {
@@ -947,7 +936,6 @@ void llvmDefineFunction(Context* ctx, Node* n)
 		}
 		else
 		{
-//			panicNode(n,"no return in function returning non-void");
 			LLVMBuildUnreachable(ctx->builder);
 		}
 		ctx->terminated=true;
@@ -1031,24 +1019,10 @@ LLVMModuleRef compileModule(Node *m)
 		llvmDefineVariable(&ctx,n);
 	}
 
-
-//	LLVMBuildCall(ctx->builder, LLVMAddFunction()  ,NULL,0,"");
-
-	for(Node* n=m->child;n!=NULL;n=n->next)
-	{
-		//if(n->type==FUNCTION_DECLARATION)
-			//llvmBuildFunction(&ctx,n);
-	}
-
-	//LLVMDumpModule(ctx.module);
 	LLVMVerifyModule(ctx.module,LLVMAbortProcessAction,NULL);
 
 	LLVMPassManagerRef manager=LLVMCreatePassManager();
 	LLVMAddPromoteMemoryToRegisterPass(manager);
-	//LLVMAddSCCPPass(manager);
-	//LLVMAddJumpThreadingPass(manager);
-	//LLVMAddSimplifyLibCallsPass(manager);
-	//LLVMAddInstructionCombiningPass(manager);
 
 	addOptimizations(manager);
 	addOptimizations(manager);
@@ -1056,8 +1030,6 @@ LLVMModuleRef compileModule(Node *m)
 
 	LLVMRunPassManager(manager,ctx.module);
 	LLVMDisposePassManager(manager);
-
-	//LLVMDumpModule(ctx.module);
 
 	destroyContext(&ctx);
 	
