@@ -24,6 +24,10 @@ function returnVoid():Void {
 	n=n+1;
 }
 
+function callPointer(f:*function():Void):Void {
+	(*f)();
+}
+
 function main(argc:Int,argv:**Byte):Int{
 	assert recursive(0,10) == 10;
 	assert simple() == 78;
@@ -32,8 +36,16 @@ function main(argc:Int,argv:**Byte):Int{
 	assert n==43;
 	incrementN();
 	assert n==44;
-    returnVoid();
+  returnVoid();
 	assert n==44;
+
+	n = 0;
+	callPointer(&incrementN);
+	assert n == 1;
+
+	var f:*function():Int = &simple;
+	assert (*f)() == 78;
+
 	return 0;
 }
 
