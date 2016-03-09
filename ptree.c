@@ -56,7 +56,7 @@ void assertNode(const Node* n, bool assertion, const char* format, ...)
 {
 	assert(n!=NULL);
 
-	if(!assertion)
+	if(assertion)
 		return;
 
 	

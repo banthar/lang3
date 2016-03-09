@@ -56,6 +56,7 @@ int main(int argc, const char* argv[])
 
 	Config config={
 		.output="out.bc",
+		.run=true
 	};
 
 	for(int i=1;i<argc;i++)
@@ -72,12 +73,9 @@ int main(int argc, const char* argv[])
 				{
 					config.dumpLLVM=true;
 				}
-				else if(strcmp(argv[i],"--run")==0)
-				{
-					config.run=true;
-				}	
 				else if(strcmp(argv[i],"--output")==0)
 				{
+					config.run=false;
 					assert(i+1<argc);
 					config.output=argv[i+1];
 					i++;

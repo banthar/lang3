@@ -22,7 +22,7 @@ llvm_utils.o: llvm_utils.cpp Makefile $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 	
 test: lang3i
-	$(foreach test,$(shell ls tests/*.l3),time -f "%E %C" ./lang3i --run  $(test);)
+	$(foreach test,$(shell ls tests/*.l3),time -f "%E %C" ./lang3i $(test);)
 
 clean:
 	rm $(OBJECTS)

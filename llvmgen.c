@@ -363,7 +363,7 @@ LLVMValueRef llvmBuildOperation(Context* ctx, Node* n)
 
 				LLVMTypeRef left_type=LLVMTypeOf(left);
 
-				assert(LLVMGetTypeKind(left_type)==LLVMStructTypeKind);
+				assertNode(n, LLVMGetTypeKind(left_type)==LLVMStructTypeKind, "left side of '.' is not a structure");
 
 				int field_id=llvmGetFieldId(ctx, getChild(n,1),left_type);
 
@@ -473,10 +473,9 @@ LLVMValueRef llvmBuildLOperation(Context* ctx, Node* n) {
 
 				LLVMTypeRef struct_type=LLVMGetElementType(left_type);
 
-				assert(LLVMGetTypeKind(struct_type)==LLVMStructTypeKind);
+				assertNode(n, LLVMGetTypeKind(struct_type)==LLVMStructTypeKind, "left side of '.' is not a structure");
 
 				int field_id=llvmGetFieldId(ctx, getChild(n,1),struct_type);
-
 				return LLVMBuildStructGEP(ctx->builder, left,field_id,"");
 			}
 		case OPERATOR_INDEX:
@@ -762,8 +761,6 @@ LLVMTypeRef llvmBuildType(Context* ctx, Node* n)
 				if(!LLVMIsConstant(elem_count))
 					panicNode(n,"Array size is not constant");
 				
-				printf(">>> %i\n",LLVMConstIntValue(elem_count));
-
 				return LLVMArrayType(llvmBuildType(ctx,getChild(n,1)),LLVMConstIntValue(elem_count));
 			}
 			break;
